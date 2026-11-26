@@ -44,7 +44,6 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* Sidebar Putih Minimalis */
     .sidebar {
       width: 240px;
       background: var(--bg-surface);
@@ -151,7 +150,6 @@
       padding-right: 10px;
     }
 
-    /* Area Konten Utama */
     .main {
       flex: 1;
       padding: 32px 36px;
@@ -479,7 +477,6 @@
   </aside>
 
   <main class="main">
-    <!-- PANEL 1: PINDAI QR -->
     <section id="panel-scan" class="panel active">
       <div class="page-header">
         <h1>Pindai QR</h1>
@@ -502,12 +499,14 @@
           <div id="reader"></div>
 
           <div class="controls">
-            <select id="cameraSelect" class="cam-select" aria-label="Pilih Kamera"></select>
-            <button id="btnStart" class="btn btn-primary">Mulai Kamera</button>
-            <button id="btnStop" class="btn btn-ghost" disabled>Stop</button>
+            <select id="cameraSelect" class="cam-select" aria-label="Pilih Kamera">
+              <option value="">Kamera Otomatis</option>
+            </select>
+            <button id="btnStart" type="button" class="btn btn-primary">Mulai Kamera</button>
+            <button id="btnStop" type="button" class="btn btn-ghost" disabled>Stop</button>
           </div>
 
-          <div id="statusBox" class="status-box">Menunggu pemindaian QR...</div>
+          <div id="statusBox" class="status-box">Klik "Mulai Kamera" lalu arahkan ke QR pemain.</div>
         </div>
       </div>
 
@@ -517,7 +516,6 @@
       </div>
     </section>
 
-    <!-- PANEL 2: RIWAYAT ABSENSI -->
     <section id="panel-history" class="panel">
       <div class="page-header">
         <h1>Riwayat Absensi</h1>
@@ -530,7 +528,7 @@
           <input id="filterDate" type="date" />
           <label for="filterSession">Sesi</label>
           <input id="filterSession" type="text" placeholder="Semua sesi" />
-          <button id="btnLoadHistory" class="btn btn-primary">Tampilkan</button>
+          <button id="btnLoadHistory" type="button" class="btn btn-primary">Tampilkan</button>
         </div>
 
         <div id="historyStatus" class="meta-muted">Pilih filter atau klik Tampilkan untuk memuat data.</div>
@@ -553,7 +551,6 @@
       </div>
     </section>
 
-    <!-- PANEL 3: RINGKASAN -->
     <section id="panel-rekap" class="panel">
       <div class="page-header">
         <h1>Ringkasan</h1>
@@ -562,7 +559,7 @@
 
       <div class="card">
         <div class="form-row" style="margin-bottom: 10px;">
-          <button id="btnLoadRekap" class="btn btn-primary">Perbarui Ringkasan</button>
+          <button id="btnLoadRekap" type="button" class="btn btn-primary">Perbarui Ringkasan</button>
           <span id="rekapSummary" class="meta-muted"></span>
         </div>
 
@@ -589,7 +586,6 @@
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyjKKp4maxqy3T4unEJ7plI4vvW09h_z0sqRSy6iIbCbVTJgDZkiX8Zy42Ry1M7g3-L/exec";
     const SCANNER_ID = "PANITIA-01";
 
-    const html5QrCode = new Html5Qrcode("reader");
     const sessionInput = document.getElementById("sessionInput");
     const cameraSelect = document.getElementById("cameraSelect");
     const btnStart = document.getElementById("btnStart");
@@ -597,13 +593,13 @@
     const statusBox = document.getElementById("statusBox");
     const scanHistory = document.getElementById("scanHistory");
 
+    let html5QrCode = null;
     let isScanning = false;
     let isSending = false;
     let lastQuickToken = "";
     let lastQuickTime = 0;
     const QUICK_BOUNCE_MS = 3000;
 
-    // Navigasi antar panel
     document.querySelectorAll(".nav-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
         document.querySelectorAll(".nav-btn").forEach((b) => b.classList.remove("active"));
@@ -634,24 +630,22 @@
       scanHistory.prepend(li);
     }
 
-    async function loadCameras() {
+    async function populateCameraList() {
+      if (typeof Html5Qrcode === "undefined") return;
       try {
         const devices = await Html5Qrcode.getCameras();
-        cameraSelect.innerHTML = "";
-        if (!devices || devices.length === 0) {
-          setStatus("Kamera tidak ditemukan.", "err");
-          btnStart.disabled = true;
-          return;
+        if (devices && devices.length > 0) {
+          cameraSelect.innerHTML = "";
+          devices.forEach((device, idx) => {
+            const opt = document.createElement("option");
+            opt.value = device.id;
+            opt.text = device.label || `Kamera ${idx + 1}`;
+            if (/back|rear|belakang|environment/i.test(opt.text)) opt.selected = true;
+            cameraSelect.appendChild(opt);
+          });
         }
-        devices.forEach((device, idx) => {
-          const opt = document.createElement("option");
-          opt.value = device.id;
-          opt.text = device.label || `Kamera ${idx + 1}`;
-          if (/back|rear|belakang|environment/i.test(opt.text)) opt.selected = true;
-          cameraSelect.appendChild(opt);
-        });
       } catch (err) {
-        setStatus("Izinkan akses kamera pada browser untuk memindai QR.", "err");
+        // Daftar kamera akan dicoba lagi saat tombol Mulai Kamera ditekan
       }
     }
 
@@ -697,27 +691,54 @@
     }
 
     btnStart.addEventListener("click", async () => {
-      const cameraId = cameraSelect.value;
-      if (!cameraId || isScanning) return;
+      if (isScanning) return;
+
+      if (typeof Html5Qrcode === "undefined") {
+        setStatus("Pustaka kamera gagal dimuat. Periksa koneksi internet lalu refresh halaman.", "err");
+        return;
+      }
+
+      btnStart.disabled = true;
+      setStatus("Meminta izin dan membuka kamera...", "wait");
+
       try {
-        await html5QrCode.start(
-          cameraId,
-          { fps: 10, qrbox: { width: 220, height: 220 } },
-          onQrDecoded,
-          () => {}
-        );
+        if (!html5QrCode) {
+          html5QrCode = new Html5Qrcode("reader");
+        }
+
+        const config = { fps: 10, qrbox: { width: 220, height: 220 } };
+        const selectedCam = cameraSelect.value;
+
+        if (selectedCam) {
+          await html5QrCode.start(selectedCam, config, onQrDecoded, () => {});
+        } else {
+          try {
+            await html5QrCode.start({ facingMode: "environment" }, config, onQrDecoded, () => {});
+          } catch (envErr) {
+            await html5QrCode.start({ facingMode: "user" }, config, onQrDecoded, () => {});
+          }
+        }
+
         isScanning = true;
-        btnStart.disabled = true;
         btnStop.disabled = false;
-        setStatus("Kamera aktif. Arahkan ke QR pemain...");
+        setStatus("Kamera aktif. Arahkan ke QR pemain...", "ok");
+        populateCameraList();
       } catch (err) {
-        setStatus("Gagal membuka kamera: " + err, "err");
+        console.error("Gagal memulai kamera:", err);
+        btnStart.disabled = false;
+        btnStop.disabled = true;
+        const msg = (err && err.message) ? err.message : String(err);
+        setStatus("Gagal membuka kamera: " + msg + " (Pastikan akses HTTPS/localhost & izin kamera aktif).", "err");
       }
     });
 
     btnStop.addEventListener("click", async () => {
-      if (!isScanning) return;
-      await html5QrCode.stop();
+      if (!isScanning || !html5QrCode) return;
+      try {
+        await html5QrCode.stop();
+      } catch (err) {
+        console.error(err);
+      }
       isScanning = false;
       btnStart.disabled = false;
       btnStop.disabled = true;
@@ -811,7 +832,7 @@
     document.getElementById("btnLoadHistory").addEventListener("click", loadRiwayatAbsensi);
     document.getElementById("btnLoadRekap").addEventListener("click", loadRekapKehadiran);
 
-    loadCameras();
+    populateCameraList();
   </script>
 </body>
 </html>
