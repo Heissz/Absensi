@@ -621,6 +621,14 @@
       statusBox.className = "status-box" + (type ? ` status-${type}` : "");
     }
 
+    function escapeHtml(str) {
+      return String(str || "")
+        .replace(/&/g, "&")
+        .replace(/</g, "<")
+        .replace(/>/g, ">")
+        .replace(/"/g, """);
+    }
+
     function addHistoryItem(token, label, ok) {
       const li = document.createElement("li");
       const timeStr = new Date().toLocaleTimeString("id-ID", { hour12: false });
@@ -793,14 +801,6 @@
       } catch (err) {
         summaryEl.textContent = "Error: " + err.message;
       }
-    }
-
-    function escapeHtml(str) {
-      return String(str || "")
-        .replace(/&/g, "&")
-        .replace(/</g, "<")
-        .replace(/>/g, ">")
-        .replace(/"/g, """);
     }
 
     document.getElementById("btnLoadHistory").addEventListener("click", loadRiwayatAbsensi);
