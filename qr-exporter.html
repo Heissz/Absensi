@@ -251,10 +251,11 @@
           <input id="onlyActiveCheck" type="checkbox" checked />
           Hanya status <code>active</code>
         </label>
-        <span id="infoCount" class="meta">Memuat data...</span>
+        <span id="infoCount" class="meta">Menyiapkan data...</span>
       </div>
 
-      <textarea id="rawInput" placeholder="Format per baris: token_qr | nama | posisi"></textarea>
+      <textarea id="rawInput">PLY-ITDA-001 | Rizky Pratama | Coach
+PLY-ITDA-002 | Samuel Gilang | Pivot</textarea>
     </div>
 
     <div class="preview-header">
@@ -316,7 +317,6 @@
       ctx.lineWidth = 4;
       ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
 
-      // QR berisi token asli dari database untuk keperluan scan
       const qrTempCanvas = document.createElement("canvas");
       await QRCode.toCanvas(qrTempCanvas, item.token, {
         width: 270,
@@ -327,7 +327,6 @@
       const qrX = Math.floor((canvas.width - qrTempCanvas.width) / 2);
       ctx.drawImage(qrTempCanvas, qrX, 38);
 
-      // Hanya Nomor, Nama, dan Posisi (tanpa kode/token)
       ctx.fillStyle = "#64748b";
       ctx.font = "700 16px system-ui, sans-serif";
       ctx.textAlign = "center";
@@ -431,7 +430,10 @@
         dbPlayers = Array.isArray(result.data) ? result.data : [];
         applyDbFilterAndRender();
       } catch (err) {
-        infoCount.textContent = "Error: " + err.message;
+        infoCount.textContent = "Gagal ambil DB — menampilkan data teks.";
+        if (rawInput.value.trim()) {
+          buildCardsFromItems(parseLines(rawInput.value));
+        }
       } finally {
         btnFetchDb.disabled = false;
       }
