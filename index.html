@@ -98,6 +98,50 @@
     const statusBox = document.getElementById("statusBox");
     const scanHistory = document.getElementById("scanHistory");
 
+    let lastQuickToken = "";
+let lastQuickTime = 0;
+const QUICK_BOUNCE_MS = 3000;
+
+async function onQrDecoded(decodedText) {
+  const token = decodedText.trim();
+  const sessionName = (sessionInput.value || "Sesi Umum").trim();
+  const now = Date.now();
+
+  if (!token || isSending) return;
+  if (token === lastQuickToken && (now - lastQuickTime) < QUICK_BOUNCE_MS) return;
+
+  isSending = true;
+  lastQuickToken = token;
+  lastQuickTime = now;
+  setStatus(`Mengirim ${token} untuk sesi "${sessionName}"...`, "wait");
+
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        qr_token: token,
+        session_id: sessionName,
+        scanner_id: SCANNER_ID
+      })
+    });
+
+    const result = await res.json();
+    if (result.ok) {
+      setStatus(result.message, "ok");
+      addHistoryItem(token, `${result.player_name || "Hadir"} (${sessionName})`, true);
+    } else {
+      setStatus(result.message || "Gagal mencatat absensi", "err");
+      addHistoryItem(token, result.message || "Ditolak", false);
+    }
+  } catch (err) {
+    setStatus("Error koneksi: " + err.message, "err");
+    addHistoryItem(token, "Error jaringan", false);
+  } finally {
+    isSending = false;
+  }
+}
+    
     let isScanning = false;
     let isSending = false;
 
