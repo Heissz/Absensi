@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scanner Absensi QR Pemain (1x per Sesi)</title>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <style>
+    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+    body {
+      margin: 0; padding: 16px; background: #f4f6f9; color: #1f2937;
+      display: flex; justify-content: center;
+    }
+    .container {
+      width: 100%; max-width: 480px; background: #fff;
+      border-radius: 14px; padding: 20px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    }
+    h1 { font-size: 1.25rem; margin: 0 0 6px; }
+    p.subtitle { font-size: 0.88rem; color: #6b7280; margin: 0 0 14px; }
+    .session-row {
+      display: flex; gap: 8px; align-items: center; margin-bottom: 12px;
+    }
+    .session-row label { font-size: 0.88rem; font-weight: 600; white-space: nowrap; }
+    .session-row input {
+      flex: 1; padding: 9px 10px; border-radius: 8px;
+      border: 1px solid #d1d5db; font-size: 0.9rem;
+    }
+    #reader {
+      width: 100%; border-radius: 10px; overflow: hidden;
+      background: #111827; min-height: 260px;
+    }
+    .controls { display: flex; gap: 8px; margin-top: 12px; }
+    select, button {
+      padding: 10px 12px; border-radius: 8px;
+      border: 1px solid #d1d5db; font-size: 0.9rem;
+    }
+    select { flex: 1; background: #fff; }
+    button { cursor: pointer; font-weight: 600; border: none; }
+    #btnStart { background: #2563eb; color: #fff; }
+    #btnStop { background: #e5e7eb; color: #374151; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .status-box {
+      margin-top: 14px; padding: 12px; border-radius: 8px;
+      font-size: 0.92rem; font-weight: 600;
+      background: #f3f4f6; color: #374151;
+    }
+    .status-ok { background: #dcfce7; color: #166534; }
+    .status-err { background: #fee2e2; color: #991b1b; }
+    .status-wait { background: #fef3c7; color: #92400e; }
+    .history { margin-top: 18px; border-top: 1px solid #e5e7eb; padding-top: 12px; }
+    .history h2 { font-size: 0.95rem; margin: 0 0 8px; }
+    .history ul {
+      list-style: none; padding: 0; margin: 0;
+      max-height: 180px; overflow-y: auto; font-size: 0.85rem;
+    }
+    .history li {
+      padding: 6px 0; border-bottom: 1px dashed #e5e7eb;
+      display: flex; justify-content: space-between; gap: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Absensi QR Pemain</h1>
+    <p class="subtitle">Setiap QR hanya dikirim 1 kali per sesi. Kamera hanya membaca teks QR.</p>
+
+    <div class="session-row">
+      <label for="sessionInput">Sesi:</label>
+      <input id="sessionInput" type="text" value="Latihan Rutin" placeholder="Contoh: Latihan Pagi / Match 1" />
+    </div>
+
+    <div id="reader"></div>
+
+    <div class="controls">
+      <select id="cameraSelect" aria-label="Pilih Kamera"></select>
+      <button id="btnStart">Mulai</button>
+      <button id="btnStop" disabled>Stop</button>
+    </div>
+
+    <div id="statusBox" class="status-box">Siap memindai QR pemain...</div>
+
+    <div class="history">
+      <h2>Tercatat di Sesi Ini</h2>
+      <ul id="scanHistory"></ul>
+    </div>
+  </div>
+
+  <script>
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyjKKp4maxqy3T4unEJ7plI4vvW09h_z0sqRSy6iIbCbVTJgDZkiX8Zy42Ry1M7g3-L/exec";
+    const SCANNER_ID = "PANITIA-01";
+
+    const html5QrCode = new Html5Qrcode("reader");
+    const sessionInput = document.getElementById("sessionInput");
+    const cameraSelect = document.getElementById("cameraSelect");
+    const btnStart = document.getElementById("btnStart");
+    const btnStop = document.getElementById("btnStop");
+    const statusBox = document.getElementById("statusBox");
+    const scanHistory = document.getElementById("scanHistory");
+
+    let isScanning = false;
+    let isSending = false;
+
+    // Set di memori untuk blokir instan saat QR masih di depan kamera
+    const sentInMemory = new Set();
+
+    function getTodayKey() {
+      const d = new Date();
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function getSessionStorageKey(sessionName) {
+      return `qr_sent_${getTodayKey()}_${sessionName.trim()}`;
+    }
+
+    function hasAlreadySent(sessionName, token) {
+      const key = `${sessionName.trim()}::${token}`;
+      if (sentInMemory.has(key)) return true;
+
+      try {
+        const stored = JSON.parse(localStorage.getItem(getSessionStorageKey(sessionName)) || "[]");
+        if (Array.isArray(stored) && stored.includes(token)) {
+          sentInMemory.add(key);
+          return true;
+        }
+      } catch (_) {}
+      return false;
+    }
+
+    function markAsSent(sessionName, token) {
+      const cleanSession = sessionName.trim();
+      sentInMemory.add(`${cleanSession}::${token}`);
+
+      try {
+        const storageKey = getSessionStorageKey(cleanSession);
+        const stored = JSON.parse(localStorage.getItem(storageKey) || "[]");
+        const arr = Array.isArray(stored) ? stored : [];
+        if (!arr.includes(token)) {
+          arr.push(token);
+          localStorage.setItem(storageKey, JSON.stringify(arr));
+        }
+      } catch (_) {}
+    }
+
+    function setStatus(message, type = "") {
+      statusBox.textContent = message;
+      statusBox.className = "status-box" + (type ? ` status-${type}` : "");
+    }
+
+    function addHistoryItem(token, label, ok) {
+      const li = document.createElement("li");
+      const timeStr = new Date().toLocaleTimeString("id-ID", { hour12: false });
+      li.innerHTML = `<span><strong>${token}</strong> — ${label}</span><span>${timeStr}</span>`;
+      li.style.color = ok ? "#166534" : "#991b1b";
+      scanHistory.prepend(li);
+    }
+
+    async function loadCameras() {
+      try {
+        const devices = await Html5Qrcode.getCameras();
+        cameraSelect.innerHTML = "";
+        if (!devices || devices.length === 0) {
+          setStatus("Kamera tidak ditemukan.", "err");
+          btnStart.disabled = true;
+          return;
+        }
+        devices.forEach((device, idx) => {
+          const opt = document.createElement("option");
+          opt.value = device.id;
+          opt.text = device.label || `Kamera ${idx + 1}`;
+          if (/back|rear|belakang|environment/i.test(opt.text)) opt.selected = true;
+          cameraSelect.appendChild(opt);
+        });
+      } catch (err) {
+        setStatus("Izinkan akses kamera pada browser untuk memindai QR.", "err");
+      }
+    }
+
+    async function onQrDecoded(decodedText) {
+      const token = decodedText.trim();
+      const sessionName = (sessionInput.value || "Sesi Umum").trim();
+      if (!token || isSending) return;
+
+      // Sudah pernah dikirim pada sesi ini -> jangan kirim ulang ke Apps Script
+      if (hasAlreadySent(sessionName, token)) {
+        setStatus(`QR ${token} sudah tercatat di sesi "${sessionName}" (tidak dikirim ulang).`, "wait");
+        return;
+      }
+
+      isSending = true;
+      setStatus(`Mengirim ${token} untuk sesi "${sessionName}"...`, "wait");
+
+      try {
+        const res = await fetch(APPS_SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            qr_token: token,
+            session_id: sessionName,
+            scanner_id: SCANNER_ID
+          })
+        });
+
+        const result = await res.json();
+        if (result.ok) {
+          markAsSent(sessionName, token);
+          setStatus(result.message, "ok");
+          addHistoryItem(token, `${result.player_name || "Hadir"} (${sessionName})`, true);
+        } else {
+          // Jika server menyatakan sudah tercatat pada sesi ini, tandai juga agar tidak dikirim ulang
+          if (result.already_recorded) {
+            markAsSent(sessionName, token);
+          }
+          setStatus(result.message || "Gagal mencatat absensi", "err");
+          addHistoryItem(token, result.message || "Ditolak", false);
+        }
+      } catch (err) {
+        // Tidak di-markAsSent agar bisa dicoba ulang jika memang gagal koneksi
+        setStatus("Error koneksi: " + err.message, "err");
+        addHistoryItem(token, "Error jaringan", false);
+      } finally {
+        isSending = false;
+      }
+    }
+
+    btnStart.addEventListener("click", async () => {
+      const cameraId = cameraSelect.value;
+      if (!cameraId || isScanning) return;
+      try {
+        await html5QrCode.start(
+          cameraId,
+          { fps: 10, qrbox: { width: 220, height: 220 } },
+          onQrDecoded,
+          () => {}
+        );
+        isScanning = true;
+        btnStart.disabled = true;
+        btnStop.disabled = false;
+        setStatus("Kamera aktif. Arahkan ke QR pemain...");
+      } catch (err) {
+        setStatus("Gagal membuka kamera: " + err, "err");
+      }
+    });
+
+    btnStop.addEventListener("click", async () => {
+      if (!isScanning) return;
+      await html5QrCode.stop();
+      isScanning = false;
+      btnStart.disabled = false;
+      btnStop.disabled = true;
+      setStatus("Pemindaian dihentikan.");
+    });
+
+    loadCameras();
+  </script>
+</body>
+</html>
