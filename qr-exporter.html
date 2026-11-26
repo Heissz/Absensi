@@ -86,13 +86,30 @@
       margin-bottom: 18px;
     }
 
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .check-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+      color: var(--text-main);
+      cursor: pointer;
+    }
+
     textarea {
       width: 100%;
-      min-height: 120px;
+      min-height: 110px;
       padding: 12px;
+      margin-top: 14px;
       border-radius: 10px;
       border: 1px solid var(--border-hairline);
-      font-size: 0.86rem;
+      font-size: 0.84rem;
       font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
       color: var(--text-main);
       background: var(--bg-subtle);
@@ -102,14 +119,6 @@
 
     textarea:focus {
       border-color: var(--accent);
-    }
-
-    .toolbar {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
-      margin-top: 12px;
     }
 
     .btn {
@@ -127,7 +136,7 @@
       color: #fff;
     }
 
-    .btn-primary:hover {
+    .btn-primary:hover:not(:disabled) {
       background: #115e59;
     }
 
@@ -137,8 +146,13 @@
       border-color: var(--border-hairline);
     }
 
-    .btn-ghost:hover {
+    .btn-ghost:hover:not(:disabled) {
       background: var(--bg-subtle);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
 
     .meta {
@@ -207,36 +221,41 @@
     <div class="header">
       <div>
         <h1>Export QR Code Pemain</h1>
-        <p>Tempel data dari Google Sheets (format: <code>qr_token | nama | posisi</code> atau koma/tab) lalu export PNG atau ZIP.</p>
+        <p>Mengambil data dari tab <code>Players</code> di Google Sheets lalu export PNG atau ZIP.</p>
       </div>
       <a href="index.html" class="back-link">← Kembali ke Presensi</a>
     </div>
 
     <div class="card">
-      <textarea id="rawInput" placeholder="Contoh:
-FTS001 | Budi Santoso | Anchor
-FTS002 | Samuel Gilang | Pivot
-FTS003 | Duta Khairi | Ass Coach">FTS001 | Budi Santoso | Anchor
-FTS002 | Samuel Gilang | Pivot
-FTS003 | Duta Khairi | Ass Coach</textarea>
-
       <div class="toolbar">
-        <button id="btnGenerate" class="btn btn-primary">Buat Pratinjau QR</button>
+        <button id="btnFetchDb" class="btn btn-primary">Ambil dari Database</button>
+        <button id="btnGenerate" class="btn btn-ghost">Buat Pratinjau dari Teks</button>
         <button id="btnDownloadZip" class="btn btn-ghost">Export Semua (.ZIP)</button>
-        <span id="infoCount" class="meta">0 kartu siap</span>
+        <label class="check-label">
+          <input id="onlyActiveCheck" type="checkbox" checked />
+          Hanya status <code>active</code>
+        </label>
+        <span id="infoCount" class="meta">Memuat data...</span>
       </div>
+
+      <textarea id="rawInput" placeholder="Data dari database akan tampil di sini, atau Anda bisa mengetik manual: qr_token | nama | posisi"></textarea>
     </div>
 
     <div id="qrGrid" class="grid"></div>
   </div>
 
   <script>
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyjKKp4maxqy3T4unEJ7plI4vvW09h_z0sqRSy6iIbCbVTJgDZkiX8Zy42Ry1M7g3-L/exec";
+
     const rawInput = document.getElementById("rawInput");
     const qrGrid = document.getElementById("qrGrid");
     const infoCount = document.getElementById("infoCount");
+    const btnFetchDb = document.getElementById("btnFetchDb");
     const btnGenerate = document.getElementById("btnGenerate");
     const btnDownloadZip = document.getElementById("btnDownloadZip");
+    const onlyActiveCheck = document.getElementById("onlyActiveCheck");
 
+    let dbPlayers = [];
     let generatedItems = [];
 
     function parseLines(text) {
@@ -312,8 +331,7 @@ FTS003 | Duta Khairi | Ass Coach</textarea>
       a.remove();
     }
 
-    async function buildCards() {
-      const items = parseLines(rawInput.value);
+    async function buildCardsFromItems(items) {
       qrGrid.innerHTML = "";
       generatedItems = [];
 
@@ -358,9 +376,44 @@ FTS003 | Duta Khairi | Ass Coach</textarea>
       infoCount.textContent = `${generatedItems.length} kartu siap`;
     }
 
+    function applyDbFilterAndRender() {
+      const filterActive = onlyActiveCheck.checked;
+      const filtered = dbPlayers
+        .filter((p) => p.qr_token)
+        .filter((p) => !filterActive || String(p.status || "").trim().toLowerCase() === "active")
+        .map((p) => ({
+          token: String(p.qr_token || "").trim(),
+          name: String(p.player_name || p.qr_token || "").trim(),
+          position: String(p.position || "").trim()
+        }));
+
+      rawInput.value = filtered
+        .map((x) => `${x.token} | ${x.name} | ${x.position}`)
+        .join("\n");
+
+      buildCardsFromItems(filtered);
+    }
+
+    async function fetchPlayersFromDb() {
+      btnFetchDb.disabled = true;
+      infoCount.textContent = "Mengambil data dari database...";
+      try {
+        const res = await fetch(`${APPS_SCRIPT_URL}?action=players`);
+        const result = await res.json();
+        if (!result.ok) throw new Error(result.message || "Gagal mengambil data pemain");
+
+        dbPlayers = Array.isArray(result.data) ? result.data : [];
+        applyDbFilterAndRender();
+      } catch (err) {
+        infoCount.textContent = "Error: " + err.message;
+      } finally {
+        btnFetchDb.disabled = false;
+      }
+    }
+
     async function exportAllAsZip() {
       if (generatedItems.length === 0) {
-        await buildCards();
+        await buildCardsFromItems(parseLines(rawInput.value));
       }
       if (generatedItems.length === 0) return;
 
@@ -376,10 +429,12 @@ FTS003 | Duta Khairi | Ass Coach</textarea>
       setTimeout(() => URL.revokeObjectURL(url), 2000);
     }
 
-    btnGenerate.addEventListener("click", buildCards);
+    btnFetchDb.addEventListener("click", fetchPlayersFromDb);
+    onlyActiveCheck.addEventListener("change", applyDbFilterAndRender);
+    btnGenerate.addEventListener("click", () => buildCardsFromItems(parseLines(rawInput.value)));
     btnDownloadZip.addEventListener("click", exportAllAsZip);
 
-    buildCards();
+    fetchPlayersFromDb();
   </script>
 </body>
 </html>
