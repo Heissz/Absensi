@@ -194,12 +194,12 @@
 
     .qr-card canvas {
       width: 160px;
-      height: 185px;
+      height: 160px;
       border-radius: 8px;
     }
 
     .player-no {
-      margin-top: 8px;
+      margin-top: 10px;
       font-size: 0.76rem;
       font-weight: 700;
       color: var(--text-muted);
@@ -237,7 +237,7 @@
     <div class="header">
       <div>
         <h1>Export QR Code Pemain</h1>
-        <p>Preview kartu berisi Nomor, Nama, dan Posisi berdasarkan data database.</p>
+        <p>Ambil data dari database atau isi teks, lalu klik Tampilkan Preview.</p>
       </div>
       <a href="index.html" class="back-link">← Kembali ke Presensi</a>
     </div>
@@ -245,16 +245,15 @@
     <div class="card">
       <div class="toolbar">
         <button id="btnFetchDb" type="button" class="btn btn-primary">Ambil dari Database</button>
-        <button id="btnGenerate" type="button" class="btn btn-ghost">Terapkan Teks</button>
+        <button id="btnGenerate" type="button" class="btn btn-ghost">Tampilkan Preview</button>
         <label class="check-label">
           <input id="onlyActiveCheck" type="checkbox" checked />
           Hanya status <code>active</code>
         </label>
-        <span id="infoCount" class="meta">Menyiapkan data...</span>
+        <span id="infoCount" class="meta">Belum dimuat — klik "Ambil dari Database" atau "Tampilkan Preview".</span>
       </div>
 
-      <textarea id="rawInput">PLY-ITDA-001 | Rizky Pratama | Coach
-PLY-ITDA-002 | Samuel Gilang | Pivot</textarea>
+      <textarea id="rawInput" placeholder="Format per baris: token_qr | nama | posisi"></textarea>
     </div>
 
     <div class="preview-header">
@@ -309,49 +308,30 @@ PLY-ITDA-002 | Samuel Gilang | Pivot</textarea>
         img.crossOrigin = "anonymous";
         img.onload = () => resolve(img);
         img.onerror = () => reject(new Error("Gagal memuat gambar QR"));
-        img.src = "https://api.qrserver.com/v1/create-qr-code/?size=270x270&margin=4&data=" + encodeURIComponent(tokenText);
+        img.src = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=6&data=" + encodeURIComponent(tokenText);
       });
     }
 
+    // Gambar PNG hanya berisi QR saja (tanpa No/Nama/Posisi di dalam gambar)
     async function renderExportCanvas(item) {
       const canvas = document.createElement("canvas");
-      canvas.width = 420;
-      canvas.height = 480;
+      canvas.width = 340;
+      canvas.height = 340;
       const ctx = canvas.getContext("2d");
 
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      ctx.strokeStyle = "#e2e8f0";
-      ctx.lineWidth = 4;
-      ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
-
       try {
         const qrImg = await loadQrImage(item.token);
-        const qrX = Math.floor((canvas.width - 270) / 2);
-        ctx.drawImage(qrImg, qrX, 38, 270, 270);
+        ctx.drawImage(qrImg, 20, 20, 300, 300);
       } catch (e) {
         ctx.fillStyle = "#fef2f2";
-        ctx.fillRect(75, 38, 270, 270);
+        ctx.fillRect(20, 20, 300, 300);
         ctx.fillStyle = "#b91c1c";
         ctx.font = "15px system-ui, sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText("QR gagal dimuat", canvas.width / 2, 173);
-      }
-
-      ctx.fillStyle = "#64748b";
-      ctx.font = "700 16px system-ui, sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText(`No. ${item.no}`, canvas.width / 2, 344);
-
-      ctx.fillStyle = "#0f172a";
-      ctx.font = "bold 24px system-ui, sans-serif";
-      ctx.fillText(item.name, canvas.width / 2, 378);
-
-      if (item.position) {
-        ctx.fillStyle = "#0f766e";
-        ctx.font = "600 18px system-ui, sans-serif";
-        ctx.fillText(item.position, canvas.width / 2, 412);
+        ctx.fillText("QR gagal dimuat", 170, 175);
       }
 
       return canvas;
@@ -370,6 +350,13 @@ PLY-ITDA-002 | Samuel Gilang | Pivot</textarea>
       qrGrid.innerHTML = "";
       generatedItems = [];
 
+      if (!items || items.length === 0) {
+        infoCount.textContent = "0 kartu";
+        return;
+      }
+
+      infoCount.textContent = `Membuat ${items.length} preview...`;
+
       for (const item of items) {
         const card = document.createElement("div");
         card.className = "qr-card";
@@ -377,6 +364,14 @@ PLY-ITDA-002 | Samuel Gilang | Pivot</textarea>
         const canvas = await renderExportCanvas(item);
         const filename = `${String(item.no).padStart(2, "0")}_${sanitizeFilename(item.name)}.png`;
         generatedItems.push({ ...item, canvas, filename });
+
+        const noEl = document.createElement("div");
+        noEl.className = "player-no";
+        noEl.textContent = `No. ${item.no}`;
+
+        const nameEl = document.createElement("div");
+        nameEl.className = "player-name";
+        nameEl.textContent = item.name;
 
         const btnSingle = document.createElement("button");
         btnSingle.type = "button";
@@ -387,15 +382,7 @@ PLY-ITDA-002 | Samuel Gilang | Pivot</textarea>
         });
 
         card.appendChild(canvas);
-
-        const noEl = document.createElement("div");
-        noEl.className = "player-no";
-        noEl.textContent = `No. ${item.no}`;
         card.appendChild(noEl);
-
-        const nameEl = document.createElement("div");
-        nameEl.className = "player-name";
-        nameEl.textContent = item.name;
         card.appendChild(nameEl);
 
         if (item.position) {
@@ -412,9 +399,9 @@ PLY-ITDA-002 | Samuel Gilang | Pivot</textarea>
       infoCount.textContent = `${generatedItems.length} kartu siap`;
     }
 
-    function applyDbFilterAndRender() {
+    function filterDbPlayers() {
       const filterActive = onlyActiveCheck.checked;
-      const filtered = dbPlayers
+      return dbPlayers
         .filter((p) => p.qr_token)
         .filter((p) => !filterActive || String(p.status || "").trim().toLowerCase() === "active")
         .map((p, idx) => ({
@@ -423,12 +410,6 @@ PLY-ITDA-002 | Samuel Gilang | Pivot</textarea>
           name: String(p.player_name || "").trim(),
           position: String(p.position || "").trim()
         }));
-
-      rawInput.value = filtered
-        .map((x) => `${x.token} | ${x.name} | ${x.position}`)
-        .join("\n");
-
-      buildCardsFromItems(filtered);
     }
 
     async function fetchPlayersFromDb() {
@@ -440,21 +421,19 @@ PLY-ITDA-002 | Samuel Gilang | Pivot</textarea>
         if (!result.ok) throw new Error(result.message || "Gagal mengambil data pemain");
 
         dbPlayers = Array.isArray(result.data) ? result.data : [];
-        applyDbFilterAndRender();
+        const filtered = filterDbPlayers();
+        rawInput.value = filtered
+          .map((x) => `${x.token} | ${x.name} | ${x.position}`)
+          .join("\n");
+        infoCount.textContent = `${filtered.length} data dimuat — klik "Tampilkan Preview".`;
       } catch (err) {
-        infoCount.textContent = "Gagal ambil DB — menampilkan data teks.";
-        if (rawInput.value.trim()) {
-          buildCardsFromItems(parseLines(rawInput.value));
-        }
+        infoCount.textContent = "Gagal ambil DB: " + err.message;
       } finally {
         btnFetchDb.disabled = false;
       }
     }
 
     async function exportAllAsZip() {
-      if (generatedItems.length === 0) {
-        await buildCardsFromItems(parseLines(rawInput.value));
-      }
       if (generatedItems.length === 0) return;
 
       if (typeof JSZip === "undefined") {
@@ -475,11 +454,8 @@ PLY-ITDA-002 | Samuel Gilang | Pivot</textarea>
     }
 
     btnFetchDb.addEventListener("click", fetchPlayersFromDb);
-    onlyActiveCheck.addEventListener("change", applyDbFilterAndRender);
     btnGenerate.addEventListener("click", () => buildCardsFromItems(parseLines(rawInput.value)));
     btnDownloadZip.addEventListener("click", exportAllAsZip);
-
-    fetchPlayersFromDb();
   </script>
 </body>
 </html>
