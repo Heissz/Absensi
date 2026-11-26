@@ -98,96 +98,11 @@
     const statusBox = document.getElementById("statusBox");
     const scanHistory = document.getElementById("scanHistory");
 
-    let lastQuickToken = "";
-let lastQuickTime = 0;
-const QUICK_BOUNCE_MS = 3000;
-
-async function onQrDecoded(decodedText) {
-  const token = decodedText.trim();
-  const sessionName = (sessionInput.value || "Sesi Umum").trim();
-  const now = Date.now();
-
-  if (!token || isSending) return;
-  if (token === lastQuickToken && (now - lastQuickTime) < QUICK_BOUNCE_MS) return;
-
-  isSending = true;
-  lastQuickToken = token;
-  lastQuickTime = now;
-  setStatus(`Mengirim ${token} untuk sesi "${sessionName}"...`, "wait");
-
-  try {
-    const res = await fetch(APPS_SCRIPT_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({
-        qr_token: token,
-        session_id: sessionName,
-        scanner_id: SCANNER_ID
-      })
-    });
-
-    const result = await res.json();
-    if (result.ok) {
-      setStatus(result.message, "ok");
-      addHistoryItem(token, `${result.player_name || "Hadir"} (${sessionName})`, true);
-    } else {
-      setStatus(result.message || "Gagal mencatat absensi", "err");
-      addHistoryItem(token, result.message || "Ditolak", false);
-    }
-  } catch (err) {
-    setStatus("Error koneksi: " + err.message, "err");
-    addHistoryItem(token, "Error jaringan", false);
-  } finally {
-    isSending = false;
-  }
-}
-    
     let isScanning = false;
     let isSending = false;
-
-    // Set di memori untuk blokir instan saat QR masih di depan kamera
-    const sentInMemory = new Set();
-
-    function getTodayKey() {
-      const d = new Date();
-      const yyyy = d.getFullYear();
-      const mm = String(d.getMonth() + 1).padStart(2, "0");
-      const dd = String(d.getDate()).padStart(2, "0");
-      return `${yyyy}-${mm}-${dd}`;
-    }
-
-    function getSessionStorageKey(sessionName) {
-      return `qr_sent_${getTodayKey()}_${sessionName.trim()}`;
-    }
-
-    function hasAlreadySent(sessionName, token) {
-      const key = `${sessionName.trim()}::${token}`;
-      if (sentInMemory.has(key)) return true;
-
-      try {
-        const stored = JSON.parse(localStorage.getItem(getSessionStorageKey(sessionName)) || "[]");
-        if (Array.isArray(stored) && stored.includes(token)) {
-          sentInMemory.add(key);
-          return true;
-        }
-      } catch (_) {}
-      return false;
-    }
-
-    function markAsSent(sessionName, token) {
-      const cleanSession = sessionName.trim();
-      sentInMemory.add(`${cleanSession}::${token}`);
-
-      try {
-        const storageKey = getSessionStorageKey(cleanSession);
-        const stored = JSON.parse(localStorage.getItem(storageKey) || "[]");
-        const arr = Array.isArray(stored) ? stored : [];
-        if (!arr.includes(token)) {
-          arr.push(token);
-          localStorage.setItem(storageKey, JSON.stringify(arr));
-        }
-      } catch (_) {}
-    }
+    let lastQuickToken = "";
+    let lastQuickTime = 0;
+    const QUICK_BOUNCE_MS = 3000;
 
     function setStatus(message, type = "") {
       statusBox.textContent = message;
@@ -226,15 +141,14 @@ async function onQrDecoded(decodedText) {
     async function onQrDecoded(decodedText) {
       const token = decodedText.trim();
       const sessionName = (sessionInput.value || "Sesi Umum").trim();
-      if (!token || isSending) return;
+      const now = Date.now();
 
-      // Sudah pernah dikirim pada sesi ini -> jangan kirim ulang ke Apps Script
-      if (hasAlreadySent(sessionName, token)) {
-        setStatus(`QR ${token} sudah tercatat di sesi "${sessionName}" (tidak dikirim ulang).`, "wait");
-        return;
-      }
+      if (!token || isSending) return;
+      if (token === lastQuickToken && (now - lastQuickTime) < QUICK_BOUNCE_MS) return;
 
       isSending = true;
+      lastQuickToken = token;
+      lastQuickTime = now;
       setStatus(`Mengirim ${token} untuk sesi "${sessionName}"...`, "wait");
 
       try {
@@ -250,19 +164,13 @@ async function onQrDecoded(decodedText) {
 
         const result = await res.json();
         if (result.ok) {
-          markAsSent(sessionName, token);
           setStatus(result.message, "ok");
           addHistoryItem(token, `${result.player_name || "Hadir"} (${sessionName})`, true);
         } else {
-          // Jika server menyatakan sudah tercatat pada sesi ini, tandai juga agar tidak dikirim ulang
-          if (result.already_recorded) {
-            markAsSent(sessionName, token);
-          }
           setStatus(result.message || "Gagal mencatat absensi", "err");
           addHistoryItem(token, result.message || "Ditolak", false);
         }
       } catch (err) {
-        // Tidak di-markAsSent agar bisa dicoba ulang jika memang gagal koneksi
         setStatus("Error koneksi: " + err.message, "err");
         addHistoryItem(token, "Error jaringan", false);
       } finally {
