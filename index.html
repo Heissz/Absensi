@@ -3,169 +3,517 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Futsal ITDA - Sistem Absensi</title>
+  <title>Futsal ITDA — Presensi Skuad</title>
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <style>
-    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+    :root {
+      --bg-page: #fcfcfd;
+      --bg-surface: #ffffff;
+      --bg-subtle: #f8fafc;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-hairline: #e2e8f0;
+      --accent: #0f766e;
+      --accent-soft: #f0fdfa;
+      --accent-border: #99f6e4;
+      --ok-bg: #f0fdf4;
+      --ok-text: #15803d;
+      --ok-border: #bbf7d0;
+      --err-bg: #fef2f2;
+      --err-text: #b91c1c;
+      --err-border: #fecaca;
+      --wait-bg: #fffbeb;
+      --wait-text: #b45309;
+      --wait-border: #fde68a;
+      --radius-lg: 16px;
+      --radius-md: 10px;
+      --radius-sm: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
     body {
-      margin: 0; background: #f3f5f4; color: #1f2937;
-      display: flex; min-height: 100vh;
+      margin: 0;
+      background: var(--bg-page);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* Sidebar ala Futsal ITDA */
+    /* Sidebar Putih Minimalis */
     .sidebar {
-      width: 230px; background: #16422b; color: #ecfdf5;
-      padding: 20px 14px; display: flex; flex-direction: column; flex-shrink: 0;
+      width: 240px;
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border-hairline);
+      padding: 28px 18px;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
     }
-    .brand { font-size: 1.05rem; font-weight: 700; margin-bottom: 22px; padding: 0 8px; }
-    .menu-label {
-      font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase;
-      color: #a7f3d0; margin: 0 8px 8px; font-weight: 600;
+
+    .brand-wrap {
+      padding: 0 10px 24px;
+      border-bottom: 1px solid var(--border-hairline);
+      margin-bottom: 22px;
     }
+
+    .brand-kicker {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+
+    .brand-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-main);
+      margin: 0;
+    }
+
+    .nav-group-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding: 0 10px;
+      margin-bottom: 10px;
+    }
+
     .nav-btn {
-      width: 100%; text-align: left; background: transparent; color: #d1fae5;
-      border: none; padding: 10px 12px; border-radius: 8px; margin-bottom: 6px;
-      cursor: pointer; font-size: 0.9rem; font-weight: 500;
-    }
-    .nav-btn:hover { background: rgba(255, 255, 255, 0.08); }
-    .nav-btn.active { background: #226643; color: #fff; font-weight: 600; }
-    .sidebar-footer {
-      margin-top: auto; padding: 12px 8px 0; font-size: 0.78rem;
-      color: #a7f3d0; border-top: 1px solid rgba(255, 255, 255, 0.12);
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid transparent;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+      text-align: left;
+      transition: all 0.16s ease;
     }
 
-    /* Main Content */
-    .main { flex: 1; padding: 24px; max-width: 920px; width: 100%; }
-    .panel { display: none; }
-    .panel.active { display: block; }
+    .nav-btn:hover {
+      background: var(--bg-subtle);
+      color: var(--text-main);
+    }
+
+    .nav-btn.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-color: var(--accent-border);
+      font-weight: 600;
+    }
+
+    .sidebar-note {
+      margin-top: auto;
+      padding-top: 18px;
+      border-top: 1px solid var(--border-hairline);
+      font-size: 0.78rem;
+      line-height: 1.5;
+      color: var(--text-muted);
+      padding-left: 10px;
+      padding-right: 10px;
+    }
+
+    /* Area Konten Utama */
+    .main {
+      flex: 1;
+      padding: 32px 36px;
+      max-width: 960px;
+      width: 100%;
+    }
+
+    .panel {
+      display: none;
+    }
+
+    .panel.active {
+      display: block;
+      animation: fadeIn 0.2s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .page-header {
+      margin-bottom: 22px;
+    }
+
+    .page-header h1 {
+      font-size: 1.45rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      margin: 0 0 6px;
+      color: var(--text-main);
+    }
+
+    .page-header p {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
     .card {
-      background: #fff; border-radius: 12px; padding: 20px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); margin-bottom: 16px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-bottom: 18px;
     }
-    h1 { font-size: 1.3rem; margin: 0 0 4px; }
-    p.subtitle { font-size: 0.88rem; color: #6b7280; margin: 0 0 16px; }
 
-    .session-row, .filter-row {
-      display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px;
+    .card-title {
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: var(--text-main);
+      margin: 0 0 14px;
+      letter-spacing: -0.01em;
     }
-    label { font-size: 0.88rem; font-weight: 600; }
-    input, select {
-      padding: 9px 10px; border-radius: 8px;
-      border: 1px solid #d1d5db; font-size: 0.9rem; background: #fff;
+
+    .form-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
     }
-    .session-row input { flex: 1; min-width: 180px; }
+
+    label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    input[type="text"],
+    input[type="date"],
+    select {
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-hairline);
+      background: var(--bg-surface);
+      color: var(--text-main);
+      font-size: 0.88rem;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+
+    input[type="text"]:focus,
+    input[type="date"]:focus,
+    select:focus {
+      border-color: var(--accent);
+    }
+
+    .session-input {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .scanner-frame {
+      max-width: 460px;
+    }
 
     #reader {
-      width: 100%; max-width: 460px; border-radius: 10px; overflow: hidden;
-      background: #111827; min-height: 250px;
+      width: 100%;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      background: #f8fafc;
+      border: 1px solid var(--border-hairline);
+      min-height: 260px;
     }
-    .controls { display: flex; gap: 8px; margin-top: 12px; max-width: 460px; flex-wrap: wrap; }
-    select.cam-select { flex: 1; min-width: 160px; }
-    button.action-btn {
-      padding: 10px 14px; border-radius: 8px; border: none;
-      cursor: pointer; font-weight: 600; font-size: 0.9rem;
+
+    .controls {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
     }
-    .btn-primary { background: #1d6f42; color: #fff; }
-    .btn-secondary { background: #e5e7eb; color: #374151; }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .cam-select {
+      flex: 1;
+      min-width: 170px;
+    }
+
+    .btn {
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #115e59;
+    }
+
+    .btn-ghost {
+      background: var(--bg-surface);
+      color: var(--text-main);
+      border-color: var(--border-hairline);
+    }
+
+    .btn-ghost:hover:not(:disabled) {
+      background: var(--bg-subtle);
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
 
     .status-box {
-      margin-top: 14px; max-width: 460px; padding: 12px; border-radius: 8px;
-      font-size: 0.92rem; font-weight: 600; background: #f3f4f6; color: #374151;
-    }
-    .status-ok { background: #dcfce7; color: #166534; }
-    .status-err { background: #fee2e2; color: #991b1b; }
-    .status-wait { background: #fef3c7; color: #92400e; }
-
-    .history-list {
-      list-style: none; padding: 0; margin: 8px 0 0;
-      max-height: 200px; overflow-y: auto; font-size: 0.86rem;
-    }
-    .history-list li {
-      padding: 7px 0; border-bottom: 1px dashed #e5e7eb;
-      display: flex; justify-content: space-between; gap: 8px;
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+      font-weight: 500;
+      background: var(--bg-subtle);
+      color: var(--text-muted);
+      border: 1px solid var(--border-hairline);
     }
 
-    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin-top: 10px; }
-    th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid #e5e7eb; }
-    th { background: #f9fafb; font-weight: 600; color: #374151; }
-    .badge-pos {
-      display: inline-block; background: #ecfdf5; color: #166534;
-      padding: 2px 8px; border-radius: 999px; font-size: 0.78rem; font-weight: 600;
+    .status-ok {
+      background: var(--ok-bg);
+      color: var(--ok-text);
+      border-color: var(--ok-border);
     }
 
-    @media (max-width: 720px) {
-      body { flex-direction: column; }
-      .sidebar { width: 100%; padding: 14px; }
-      .sidebar-footer { display: none; }
-      .main { padding: 14px; }
+    .status-err {
+      background: var(--err-bg);
+      color: var(--err-text);
+      border-color: var(--err-border);
+    }
+
+    .status-wait {
+      background: var(--wait-bg);
+      color: var(--wait-text);
+      border-color: var(--wait-border);
+    }
+
+    .mini-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      max-height: 210px;
+      overflow-y: auto;
+    }
+
+    .mini-list li {
+      padding: 10px 2px;
+      border-bottom: 1px solid var(--border-hairline);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.86rem;
+    }
+
+    .mini-list li:last-child {
+      border-bottom: none;
+    }
+
+    .meta-muted {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-md);
+      margin-top: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.86rem;
+      background: var(--bg-surface);
+    }
+
+    th, td {
+      padding: 11px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-hairline);
+    }
+
+    th {
+      background: var(--bg-subtle);
+      color: var(--text-muted);
+      font-size: 0.76rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: #fafbfc;
+    }
+
+    .pos-pill {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border: 1px solid var(--accent-border);
+    }
+
+    @media (max-width: 780px) {
+      body {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--border-hairline);
+        padding: 16px;
+      }
+
+      .brand-wrap {
+        padding: 0 0 12px;
+        margin-bottom: 12px;
+      }
+
+      .nav-list {
+        display: flex;
+        gap: 6px;
+        overflow-x: auto;
+      }
+
+      .nav-group-label,
+      .sidebar-note {
+        display: none;
+      }
+
+      .nav-btn {
+        width: auto;
+        white-space: nowrap;
+        margin-bottom: 0;
+      }
+
+      .main {
+        padding: 20px 16px;
+      }
+
+      .card {
+        padding: 18px;
+      }
     }
   </style>
 </head>
 <body>
   <aside class="sidebar">
-    <div class="brand">FUTSAL ITDA</div>
-    <div class="menu-label">Menu Utama</div>
-    <button class="nav-btn active" data-target="panel-scan">Scan Absensi</button>
-    <button class="nav-btn" data-target="panel-history">Riwayat Absensi</button>
-    <button class="nav-btn" data-target="panel-rekap">Rekap Kehadiran</button>
-    <div class="sidebar-footer">
-      Sistem Absensi Pemain<br />Futsal ITDA
+    <div class="brand-wrap">
+      <div class="brand-kicker">Presensi Digital</div>
+      <h2 class="brand-title">Futsal ITDA</h2>
+    </div>
+
+    <div class="nav-group-label">Navigasi</div>
+    <div class="nav-list">
+      <button class="nav-btn active" data-target="panel-scan">Pindai QR</button>
+      <button class="nav-btn" data-target="panel-history">Riwayat Absensi</button>
+      <button class="nav-btn" data-target="panel-rekap">Ringkasan</button>
+    </div>
+
+    <div class="sidebar-note">
+      Satu QR berlaku satu kali per sesi. Data tersimpan langsung di Google Sheets.
     </div>
   </aside>
 
   <main class="main">
-    <!-- MENU 1: SCAN ABSENSI -->
+    <!-- PANEL 1: PINDAI QR -->
     <section id="panel-scan" class="panel active">
-      <div class="card">
-        <h1>Scan Absensi</h1>
-        <p class="subtitle">Pindai QR Code pemain untuk mencatat kehadiran sesi (1x per sesi).</p>
-
-        <div class="session-row">
-          <label for="sessionInput">Sesi:</label>
-          <input id="sessionInput" type="text" value="Latihan Rutin" placeholder="Contoh: Latihan Pagi / Match 1" />
-        </div>
-
-        <div id="reader"></div>
-
-        <div class="controls">
-          <select id="cameraSelect" class="cam-select" aria-label="Pilih Kamera"></select>
-          <button id="btnStart" class="action-btn btn-primary">Aktifkan Kamera</button>
-          <button id="btnStop" class="action-btn btn-secondary" disabled>Matikan Kamera</button>
-        </div>
-
-        <div id="statusBox" class="status-box">Siap memindai QR pemain...</div>
+      <div class="page-header">
+        <h1>Pindai QR</h1>
+        <p>Arahkan kamera ke kartu QR pemain untuk mencatat kehadiran sesi aktif.</p>
       </div>
 
       <div class="card">
-        <strong>Tercatat di Sesi Ini</strong>
-        <ul id="scanHistory" class="history-list"></ul>
+        <div class="form-row">
+          <label for="sessionInput">Sesi Aktif</label>
+          <input
+            id="sessionInput"
+            class="session-input"
+            type="text"
+            value="Latihan Rutin"
+            placeholder="Contoh: Latihan Rutin / Uji Coba"
+          />
+        </div>
+
+        <div class="scanner-frame">
+          <div id="reader"></div>
+
+          <div class="controls">
+            <select id="cameraSelect" class="cam-select" aria-label="Pilih Kamera"></select>
+            <button id="btnStart" class="btn btn-primary">Mulai Kamera</button>
+            <button id="btnStop" class="btn btn-ghost" disabled>Stop</button>
+          </div>
+
+          <div id="statusBox" class="status-box">Menunggu pemindaian QR...</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 class="card-title">Masuk di Sesi Ini</h3>
+        <ul id="scanHistory" class="mini-list"></ul>
       </div>
     </section>
 
-    <!-- MENU 2: RIWAYAT ABSENSI -->
+    <!-- PANEL 2: RIWAYAT ABSENSI -->
     <section id="panel-history" class="panel">
-      <div class="card">
+      <div class="page-header">
         <h1>Riwayat Absensi</h1>
-        <p class="subtitle">Data kehadiran diambil dari tab Logs di Google Sheets.</p>
+        <p>Daftar log kehadiran harian per sesi dari spreadsheet.</p>
+      </div>
 
-        <div class="filter-row">
-          <label for="filterDate">Tanggal:</label>
+      <div class="card">
+        <div class="form-row" style="margin-bottom: 10px;">
+          <label for="filterDate">Tanggal</label>
           <input id="filterDate" type="date" />
-          <label for="filterSession">Sesi:</label>
+          <label for="filterSession">Sesi</label>
           <input id="filterSession" type="text" placeholder="Semua sesi" />
-          <button id="btnLoadHistory" class="action-btn btn-primary">Muat Riwayat</button>
+          <button id="btnLoadHistory" class="btn btn-primary">Tampilkan</button>
         </div>
 
-        <div id="historyStatus" class="subtitle">Klik "Muat Riwayat" untuk mengambil data.</div>
-        <div style="overflow-x:auto;">
+        <div id="historyStatus" class="meta-muted">Pilih filter atau klik Tampilkan untuk memuat data.</div>
+
+        <div class="table-wrap">
           <table>
             <thead>
               <tr>
                 <th>Tanggal</th>
                 <th>Jam</th>
                 <th>Sesi</th>
-                <th>Nama Pemain</th>
+                <th>Nama</th>
                 <th>Posisi / Ket.</th>
                 <th>Token</th>
               </tr>
@@ -176,27 +524,29 @@
       </div>
     </section>
 
-    <!-- MENU 3: REKAP KEHADIRAN -->
+    <!-- PANEL 3: RINGKASAN -->
     <section id="panel-rekap" class="panel">
-      <div class="card">
-        <h1>Rekap Kehadiran</h1>
-        <p class="subtitle">Ringkasan total hadir per pemain berdasarkan tab Players dan Logs.</p>
+      <div class="page-header">
+        <h1>Ringkasan</h1>
+        <p>Akumulasi kehadiran tiap anggota skuad berdasarkan sesi tercatat.</p>
+      </div>
 
-        <div class="filter-row">
-          <button id="btnLoadRekap" class="action-btn btn-primary">Refresh Rekap</button>
-          <span id="rekapSummary" class="subtitle" style="margin:0;"></span>
+      <div class="card">
+        <div class="form-row" style="margin-bottom: 10px;">
+          <button id="btnLoadRekap" class="btn btn-primary">Perbarui Ringkasan</button>
+          <span id="rekapSummary" class="meta-muted"></span>
         </div>
 
-        <div style="overflow-x:auto;">
+        <div class="table-wrap">
           <table>
             <thead>
               <tr>
                 <th>Token</th>
-                <th>Nama Pemain</th>
+                <th>Nama</th>
                 <th>Posisi / Ket.</th>
                 <th>Status</th>
                 <th>Hadir</th>
-                <th>Persentase</th>
+                <th>Rasio</th>
               </tr>
             </thead>
             <tbody id="rekapTableBody"></tbody>
@@ -224,7 +574,7 @@
     let lastQuickTime = 0;
     const QUICK_BOUNCE_MS = 3000;
 
-    // Navigasi menu
+    // Navigasi antar panel
     document.querySelectorAll(".nav-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
         document.querySelectorAll(".nav-btn").forEach((b) => b.classList.remove("active"));
@@ -250,8 +600,8 @@
     function addHistoryItem(token, label, ok) {
       const li = document.createElement("li");
       const timeStr = new Date().toLocaleTimeString("id-ID", { hour12: false });
-      li.innerHTML = `<span><strong>${token}</strong> — ${label}</span><span>${timeStr}</span>`;
-      li.style.color = ok ? "#166534" : "#991b1b";
+      li.innerHTML = `<span><strong>${escapeHtml(token)}</strong> — ${escapeHtml(label)}</span><span class="meta-muted">${timeStr}</span>`;
+      li.style.color = ok ? "#15803d" : "#b91c1c";
       scanHistory.prepend(li);
     }
 
@@ -345,7 +695,6 @@
       setStatus("Pemindaian dihentikan.");
     });
 
-    // Riwayat Absensi (GET)
     async function loadRiwayatAbsensi() {
       const historyStatus = document.getElementById("historyStatus");
       const tbody = document.getElementById("historyTableBody");
@@ -362,13 +711,13 @@
 
         const res = await fetch(`${APPS_SCRIPT_URL}?${params.toString()}`);
         const result = await res.json();
-        if (!result.ok) throw new Error(result.message || "Gagal memuat riwayat");
+        if (!result.ok) throw new Error(result.message || "Gagal memuat riwayat absensi");
 
         const rows = result.data || [];
-        historyStatus.textContent = `Menampilkan ${rows.length} catatan kehadiran.`;
+        historyStatus.textContent = `${rows.length} catatan ditemukan.`;
 
         if (rows.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="6">Tidak ada data riwayat.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="6">Belum ada catatan pada filter ini.</td></tr>`;
           return;
         }
 
@@ -378,48 +727,47 @@
             <td>${escapeHtml(r.jam)}</td>
             <td>${escapeHtml(r.sesi)}</td>
             <td><strong>${escapeHtml(r.player_name)}</strong></td>
-            <td>${r.position ? `<span class="badge-pos">${escapeHtml(r.position)}</span>` : "-"}</td>
-            <td>${escapeHtml(r.qr_token)}</td>
+            <td>${r.position ? `<span class="pos-pill">${escapeHtml(r.position)}</span>` : "-"}</td>
+            <td class="meta-muted">${escapeHtml(r.qr_token)}</td>
           </tr>
         `).join("");
       } catch (err) {
-        historyStatus.textContent = "Error memuat riwayat: " + err.message;
+        historyStatus.textContent = "Error: " + err.message;
       }
     }
 
-    // Rekap Kehadiran (GET)
     async function loadRekapKehadiran() {
       const summaryEl = document.getElementById("rekapSummary");
       const tbody = document.getElementById("rekapTableBody");
 
-      summaryEl.textContent = "Memuat rekap...";
+      summaryEl.textContent = "Memuat ringkasan...";
       tbody.innerHTML = "";
 
       try {
         const res = await fetch(`${APPS_SCRIPT_URL}?action=rekap`);
         const result = await res.json();
-        if (!result.ok) throw new Error(result.message || "Gagal memuat rekap");
+        if (!result.ok) throw new Error(result.message || "Gagal memuat ringkasan");
 
         const rows = result.data || [];
-        summaryEl.textContent = `Total sesi tercatat: ${result.total_sessions || 0} sesi`;
+        summaryEl.textContent = `Total sesi tercatat: ${result.total_sessions || 0}`;
 
         if (rows.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="6">Belum ada data pemain di tab Players.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="6">Data skuad belum tersedia.</td></tr>`;
           return;
         }
 
         tbody.innerHTML = rows.map((r) => `
           <tr>
-            <td>${escapeHtml(r.qr_token)}</td>
+            <td class="meta-muted">${escapeHtml(r.qr_token)}</td>
             <td><strong>${escapeHtml(r.player_name)}</strong></td>
-            <td>${r.position ? `<span class="badge-pos">${escapeHtml(r.position)}</span>` : "-"}</td>
+            <td>${r.position ? `<span class="pos-pill">${escapeHtml(r.position)}</span>` : "-"}</td>
             <td>${escapeHtml(r.status)}</td>
             <td><strong>${r.hadir}</strong> / ${r.total_sesi}</td>
             <td>${r.persentase}%</td>
           </tr>
         `).join("");
       } catch (err) {
-        summaryEl.textContent = "Error memuat rekap: " + err.message;
+        summaryEl.textContent = "Error: " + err.message;
       }
     }
 
