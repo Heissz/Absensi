@@ -104,7 +104,7 @@
 
     textarea {
       width: 100%;
-      min-height: 110px;
+      min-height: 105px;
       padding: 12px;
       margin-top: 14px;
       border-radius: 10px;
@@ -161,6 +161,21 @@
       margin-left: auto;
     }
 
+    .preview-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .preview-title {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
@@ -180,39 +195,41 @@
 
     .qr-card canvas {
       width: 160px;
-      height: 160px;
+      height: 185px;
       border-radius: 8px;
     }
 
-    .player-name {
-      margin-top: 10px;
+    .player-no {
+      margin-top: 8px;
+      font-size: 0.76rem;
       font-weight: 700;
-      font-size: 0.92rem;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+    }
+
+    .player-name {
+      margin-top: 2px;
+      font-weight: 700;
+      font-size: 0.94rem;
+      color: var(--text-main);
     }
 
     .player-pos {
-      margin-top: 3px;
+      margin-top: 5px;
       font-size: 0.76rem;
       font-weight: 600;
       color: var(--accent);
       background: var(--accent-soft);
       border: 1px solid var(--accent-border);
-      padding: 2px 8px;
+      padding: 2px 9px;
       border-radius: 999px;
     }
 
-    .player-token {
-      margin-top: 6px;
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    }
-
     .qr-card .btn {
-      margin-top: 10px;
+      margin-top: 12px;
       width: 100%;
       padding: 8px 10px;
-      font-size: 0.8rem;
+      font-size: 0.82rem;
     }
   </style>
 </head>
@@ -221,16 +238,15 @@
     <div class="header">
       <div>
         <h1>Export QR Code Pemain</h1>
-        <p>Mengambil data dari tab <code>Players</code> di Google Sheets lalu export PNG atau ZIP.</p>
+        <p>Preview kartu berisi Nomor, Nama, dan Posisi berdasarkan data database.</p>
       </div>
       <a href="index.html" class="back-link">← Kembali ke Presensi</a>
     </div>
 
     <div class="card">
       <div class="toolbar">
-        <button id="btnFetchDb" class="btn btn-primary">Ambil dari Database</button>
-        <button id="btnGenerate" class="btn btn-ghost">Buat Pratinjau dari Teks</button>
-        <button id="btnDownloadZip" class="btn btn-ghost">Export Semua (.ZIP)</button>
+        <button id="btnFetchDb" type="button" class="btn btn-primary">Ambil dari Database</button>
+        <button id="btnGenerate" type="button" class="btn btn-ghost">Terapkan Teks</button>
         <label class="check-label">
           <input id="onlyActiveCheck" type="checkbox" checked />
           Hanya status <code>active</code>
@@ -238,7 +254,12 @@
         <span id="infoCount" class="meta">Memuat data...</span>
       </div>
 
-      <textarea id="rawInput" placeholder="Data dari database akan tampil di sini, atau Anda bisa mengetik manual: qr_token | nama | posisi"></textarea>
+      <textarea id="rawInput" placeholder="Format per baris: token_qr | nama | posisi"></textarea>
+    </div>
+
+    <div class="preview-header">
+      <h2 class="preview-title">Preview Kartu QR</h2>
+      <button id="btnDownloadZip" type="button" class="btn btn-primary">Unduh Semua (.ZIP)</button>
     </div>
 
     <div id="qrGrid" class="grid"></div>
@@ -263,9 +284,10 @@
         .split(/\r?\n/)
         .map((line) => line.trim())
         .filter(Boolean)
-        .map((line) => {
+        .map((line, idx) => {
           const parts = line.split(/\t|\||,/).map((p) => p.trim());
           return {
+            no: idx + 1,
             token: parts[0] || "",
             name: parts[1] || parts[0] || "",
             position: parts[2] || ""
@@ -284,7 +306,7 @@
     async function renderExportCanvas(item) {
       const canvas = document.createElement("canvas");
       canvas.width = 420;
-      canvas.height = 500;
+      canvas.height = 480;
       const ctx = canvas.getContext("2d");
 
       ctx.fillStyle = "#ffffff";
@@ -294,30 +316,32 @@
       ctx.lineWidth = 4;
       ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
 
+      // QR berisi token asli dari database untuk keperluan scan
       const qrTempCanvas = document.createElement("canvas");
       await QRCode.toCanvas(qrTempCanvas, item.token, {
-        width: 280,
+        width: 270,
         margin: 2,
         color: { dark: "#0f172a", light: "#ffffff" }
       });
 
       const qrX = Math.floor((canvas.width - qrTempCanvas.width) / 2);
-      ctx.drawImage(qrTempCanvas, qrX, 42);
+      ctx.drawImage(qrTempCanvas, qrX, 38);
+
+      // Hanya Nomor, Nama, dan Posisi (tanpa kode/token)
+      ctx.fillStyle = "#64748b";
+      ctx.font = "700 16px system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(`No. ${item.no}`, canvas.width / 2, 344);
 
       ctx.fillStyle = "#0f172a";
       ctx.font = "bold 24px system-ui, sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText(item.name, canvas.width / 2, 365);
+      ctx.fillText(item.name, canvas.width / 2, 378);
 
       if (item.position) {
         ctx.fillStyle = "#0f766e";
-        ctx.font = "600 17px system-ui, sans-serif";
-        ctx.fillText(item.position, canvas.width / 2, 396);
+        ctx.font = "600 18px system-ui, sans-serif";
+        ctx.fillText(item.position, canvas.width / 2, 412);
       }
-
-      ctx.fillStyle = "#64748b";
-      ctx.font = "15px ui-monospace, monospace";
-      ctx.fillText(item.token, canvas.width / 2, 434);
 
       return canvas;
     }
@@ -340,17 +364,23 @@
         card.className = "qr-card";
 
         const canvas = await renderExportCanvas(item);
-        const filename = `${sanitizeFilename(item.token)}_${sanitizeFilename(item.name)}.png`;
+        const filename = `${String(item.no).padStart(2, "0")}_${sanitizeFilename(item.name)}.png`;
         generatedItems.push({ ...item, canvas, filename });
 
         const btnSingle = document.createElement("button");
+        btnSingle.type = "button";
         btnSingle.className = "btn btn-ghost";
-        btnSingle.textContent = "Unduh PNG";
+        btnSingle.textContent = "Unduh";
         btnSingle.addEventListener("click", () => {
           downloadDataUrl(canvas.toDataURL("image/png"), filename);
         });
 
         card.appendChild(canvas);
+
+        const noEl = document.createElement("div");
+        noEl.className = "player-no";
+        noEl.textContent = `No. ${item.no}`;
+        card.appendChild(noEl);
 
         const nameEl = document.createElement("div");
         nameEl.className = "player-name";
@@ -364,11 +394,6 @@
           card.appendChild(posEl);
         }
 
-        const tokEl = document.createElement("div");
-        tokEl.className = "player-token";
-        tokEl.textContent = item.token;
-        card.appendChild(tokEl);
-
         card.appendChild(btnSingle);
         qrGrid.appendChild(card);
       }
@@ -381,9 +406,10 @@
       const filtered = dbPlayers
         .filter((p) => p.qr_token)
         .filter((p) => !filterActive || String(p.status || "").trim().toLowerCase() === "active")
-        .map((p) => ({
+        .map((p, idx) => ({
+          no: idx + 1,
           token: String(p.qr_token || "").trim(),
-          name: String(p.player_name || p.qr_token || "").trim(),
+          name: String(p.player_name || "").trim(),
           position: String(p.position || "").trim()
         }));
 
