@@ -29,6 +29,7 @@
       background: var(--bg-page);
       color: var(--text-main);
       padding: 28px 20px;
+      -webkit-font-smoothing: antialiased;
     }
 
     .container {
@@ -37,6 +38,11 @@
     }
 
     .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      flex-wrap: wrap;
       margin-bottom: 20px;
     }
 
@@ -50,6 +56,26 @@
       margin: 0;
       color: var(--text-muted);
       font-size: 0.9rem;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      padding: 9px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border-hairline);
+      background: var(--bg-surface);
+      color: var(--text-main);
+      font-size: 0.86rem;
+      font-weight: 600;
+      transition: all 0.15s ease;
+    }
+
+    .back-link:hover {
+      background: var(--bg-subtle);
+      border-color: #cbd5e1;
     }
 
     .card {
@@ -71,6 +97,11 @@
       color: var(--text-main);
       background: var(--bg-subtle);
       resize: vertical;
+      outline: none;
+    }
+
+    textarea:focus {
+      border-color: var(--accent);
     }
 
     .toolbar {
@@ -88,6 +119,7 @@
       font-size: 0.86rem;
       font-weight: 600;
       cursor: pointer;
+      transition: all 0.15s ease;
     }
 
     .btn-primary {
@@ -173,8 +205,11 @@
 <body>
   <div class="container">
     <div class="header">
-      <h1>Export QR Code Pemain</h1>
-      <p>Tempel data dari Google Sheets (format: <code>qr_token | nama | posisi</code> atau koma/tab) lalu export PNG atau ZIP.</p>
+      <div>
+        <h1>Export QR Code Pemain</h1>
+        <p>Tempel data dari Google Sheets (format: <code>qr_token | nama | posisi</code> atau koma/tab) lalu export PNG atau ZIP.</p>
+      </div>
+      <a href="index.html" class="back-link">← Kembali ke Presensi</a>
     </div>
 
     <div class="card">
@@ -210,7 +245,6 @@ FTS003 | Duta Khairi | Ass Coach</textarea>
         .map((line) => line.trim())
         .filter(Boolean)
         .map((line) => {
-          // Mendukung pemisah pipe (|), tab (copy dari Sheets), atau koma (,)
           const parts = line.split(/\t|\||,/).map((p) => p.trim());
           return {
             token: parts[0] || "",
@@ -229,7 +263,6 @@ FTS003 | Duta Khairi | Ass Coach</textarea>
     }
 
     async function renderExportCanvas(item) {
-      // Buat canvas kartu berlabel agar mudah dibagikan ke pemain
       const canvas = document.createElement("canvas");
       canvas.width = 420;
       canvas.height = 500;
@@ -242,7 +275,6 @@ FTS003 | Duta Khairi | Ass Coach</textarea>
       ctx.lineWidth = 4;
       ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
 
-      // Render QR murni berisi qr_token
       const qrTempCanvas = document.createElement("canvas");
       await QRCode.toCanvas(qrTempCanvas, item.token, {
         width: 280,
