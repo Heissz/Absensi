@@ -3,88 +3,208 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Scanner Absensi QR Pemain (1x per Sesi)</title>
+  <title>Futsal ITDA - Sistem Absensi</title>
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <style>
     * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
     body {
-      margin: 0; padding: 16px; background: #f4f6f9; color: #1f2937;
-      display: flex; justify-content: center;
+      margin: 0; background: #f3f5f4; color: #1f2937;
+      display: flex; min-height: 100vh;
     }
-    .container {
-      width: 100%; max-width: 480px; background: #fff;
-      border-radius: 14px; padding: 20px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+
+    /* Sidebar ala Futsal ITDA */
+    .sidebar {
+      width: 230px; background: #16422b; color: #ecfdf5;
+      padding: 20px 14px; display: flex; flex-direction: column; flex-shrink: 0;
     }
-    h1 { font-size: 1.25rem; margin: 0 0 6px; }
-    p.subtitle { font-size: 0.88rem; color: #6b7280; margin: 0 0 14px; }
-    .session-row {
-      display: flex; gap: 8px; align-items: center; margin-bottom: 12px;
+    .brand { font-size: 1.05rem; font-weight: 700; margin-bottom: 22px; padding: 0 8px; }
+    .menu-label {
+      font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase;
+      color: #a7f3d0; margin: 0 8px 8px; font-weight: 600;
     }
-    .session-row label { font-size: 0.88rem; font-weight: 600; white-space: nowrap; }
-    .session-row input {
-      flex: 1; padding: 9px 10px; border-radius: 8px;
-      border: 1px solid #d1d5db; font-size: 0.9rem;
+    .nav-btn {
+      width: 100%; text-align: left; background: transparent; color: #d1fae5;
+      border: none; padding: 10px 12px; border-radius: 8px; margin-bottom: 6px;
+      cursor: pointer; font-size: 0.9rem; font-weight: 500;
     }
+    .nav-btn:hover { background: rgba(255, 255, 255, 0.08); }
+    .nav-btn.active { background: #226643; color: #fff; font-weight: 600; }
+    .sidebar-footer {
+      margin-top: auto; padding: 12px 8px 0; font-size: 0.78rem;
+      color: #a7f3d0; border-top: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    /* Main Content */
+    .main { flex: 1; padding: 24px; max-width: 920px; width: 100%; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .card {
+      background: #fff; border-radius: 12px; padding: 20px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); margin-bottom: 16px;
+    }
+    h1 { font-size: 1.3rem; margin: 0 0 4px; }
+    p.subtitle { font-size: 0.88rem; color: #6b7280; margin: 0 0 16px; }
+
+    .session-row, .filter-row {
+      display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px;
+    }
+    label { font-size: 0.88rem; font-weight: 600; }
+    input, select {
+      padding: 9px 10px; border-radius: 8px;
+      border: 1px solid #d1d5db; font-size: 0.9rem; background: #fff;
+    }
+    .session-row input { flex: 1; min-width: 180px; }
+
     #reader {
-      width: 100%; border-radius: 10px; overflow: hidden;
-      background: #111827; min-height: 260px;
+      width: 100%; max-width: 460px; border-radius: 10px; overflow: hidden;
+      background: #111827; min-height: 250px;
     }
-    .controls { display: flex; gap: 8px; margin-top: 12px; }
-    select, button {
-      padding: 10px 12px; border-radius: 8px;
-      border: 1px solid #d1d5db; font-size: 0.9rem;
+    .controls { display: flex; gap: 8px; margin-top: 12px; max-width: 460px; flex-wrap: wrap; }
+    select.cam-select { flex: 1; min-width: 160px; }
+    button.action-btn {
+      padding: 10px 14px; border-radius: 8px; border: none;
+      cursor: pointer; font-weight: 600; font-size: 0.9rem;
     }
-    select { flex: 1; background: #fff; }
-    button { cursor: pointer; font-weight: 600; border: none; }
-    #btnStart { background: #2563eb; color: #fff; }
-    #btnStop { background: #e5e7eb; color: #374151; }
+    .btn-primary { background: #1d6f42; color: #fff; }
+    .btn-secondary { background: #e5e7eb; color: #374151; }
     button:disabled { opacity: 0.5; cursor: not-allowed; }
+
     .status-box {
-      margin-top: 14px; padding: 12px; border-radius: 8px;
-      font-size: 0.92rem; font-weight: 600;
-      background: #f3f4f6; color: #374151;
+      margin-top: 14px; max-width: 460px; padding: 12px; border-radius: 8px;
+      font-size: 0.92rem; font-weight: 600; background: #f3f4f6; color: #374151;
     }
     .status-ok { background: #dcfce7; color: #166534; }
     .status-err { background: #fee2e2; color: #991b1b; }
     .status-wait { background: #fef3c7; color: #92400e; }
-    .history { margin-top: 18px; border-top: 1px solid #e5e7eb; padding-top: 12px; }
-    .history h2 { font-size: 0.95rem; margin: 0 0 8px; }
-    .history ul {
-      list-style: none; padding: 0; margin: 0;
-      max-height: 180px; overflow-y: auto; font-size: 0.85rem;
+
+    .history-list {
+      list-style: none; padding: 0; margin: 8px 0 0;
+      max-height: 200px; overflow-y: auto; font-size: 0.86rem;
     }
-    .history li {
-      padding: 6px 0; border-bottom: 1px dashed #e5e7eb;
+    .history-list li {
+      padding: 7px 0; border-bottom: 1px dashed #e5e7eb;
       display: flex; justify-content: space-between; gap: 8px;
+    }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin-top: 10px; }
+    th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid #e5e7eb; }
+    th { background: #f9fafb; font-weight: 600; color: #374151; }
+    .badge-pos {
+      display: inline-block; background: #ecfdf5; color: #166534;
+      padding: 2px 8px; border-radius: 999px; font-size: 0.78rem; font-weight: 600;
+    }
+
+    @media (max-width: 720px) {
+      body { flex-direction: column; }
+      .sidebar { width: 100%; padding: 14px; }
+      .sidebar-footer { display: none; }
+      .main { padding: 14px; }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Absensi QR Pemain</h1>
-    <p class="subtitle">Setiap QR hanya dikirim 1 kali per sesi. Kamera hanya membaca teks QR.</p>
-
-    <div class="session-row">
-      <label for="sessionInput">Sesi:</label>
-      <input id="sessionInput" type="text" value="Latihan Rutin" placeholder="Contoh: Latihan Pagi / Match 1" />
+  <aside class="sidebar">
+    <div class="brand">FUTSAL ITDA</div>
+    <div class="menu-label">Menu Utama</div>
+    <button class="nav-btn active" data-target="panel-scan">Scan Absensi</button>
+    <button class="nav-btn" data-target="panel-history">Riwayat Absensi</button>
+    <button class="nav-btn" data-target="panel-rekap">Rekap Kehadiran</button>
+    <div class="sidebar-footer">
+      Sistem Absensi Pemain<br />Futsal ITDA
     </div>
+  </aside>
 
-    <div id="reader"></div>
+  <main class="main">
+    <!-- MENU 1: SCAN ABSENSI -->
+    <section id="panel-scan" class="panel active">
+      <div class="card">
+        <h1>Scan Absensi</h1>
+        <p class="subtitle">Pindai QR Code pemain untuk mencatat kehadiran sesi (1x per sesi).</p>
 
-    <div class="controls">
-      <select id="cameraSelect" aria-label="Pilih Kamera"></select>
-      <button id="btnStart">Mulai</button>
-      <button id="btnStop" disabled>Stop</button>
-    </div>
+        <div class="session-row">
+          <label for="sessionInput">Sesi:</label>
+          <input id="sessionInput" type="text" value="Latihan Rutin" placeholder="Contoh: Latihan Pagi / Match 1" />
+        </div>
 
-    <div id="statusBox" class="status-box">Siap memindai QR pemain...</div>
+        <div id="reader"></div>
 
-    <div class="history">
-      <h2>Tercatat di Sesi Ini</h2>
-      <ul id="scanHistory"></ul>
-    </div>
-  </div>
+        <div class="controls">
+          <select id="cameraSelect" class="cam-select" aria-label="Pilih Kamera"></select>
+          <button id="btnStart" class="action-btn btn-primary">Aktifkan Kamera</button>
+          <button id="btnStop" class="action-btn btn-secondary" disabled>Matikan Kamera</button>
+        </div>
+
+        <div id="statusBox" class="status-box">Siap memindai QR pemain...</div>
+      </div>
+
+      <div class="card">
+        <strong>Tercatat di Sesi Ini</strong>
+        <ul id="scanHistory" class="history-list"></ul>
+      </div>
+    </section>
+
+    <!-- MENU 2: RIWAYAT ABSENSI -->
+    <section id="panel-history" class="panel">
+      <div class="card">
+        <h1>Riwayat Absensi</h1>
+        <p class="subtitle">Data kehadiran diambil dari tab Logs di Google Sheets.</p>
+
+        <div class="filter-row">
+          <label for="filterDate">Tanggal:</label>
+          <input id="filterDate" type="date" />
+          <label for="filterSession">Sesi:</label>
+          <input id="filterSession" type="text" placeholder="Semua sesi" />
+          <button id="btnLoadHistory" class="action-btn btn-primary">Muat Riwayat</button>
+        </div>
+
+        <div id="historyStatus" class="subtitle">Klik "Muat Riwayat" untuk mengambil data.</div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Tanggal</th>
+                <th>Jam</th>
+                <th>Sesi</th>
+                <th>Nama Pemain</th>
+                <th>Posisi / Ket.</th>
+                <th>Token</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- MENU 3: REKAP KEHADIRAN -->
+    <section id="panel-rekap" class="panel">
+      <div class="card">
+        <h1>Rekap Kehadiran</h1>
+        <p class="subtitle">Ringkasan total hadir per pemain berdasarkan tab Players dan Logs.</p>
+
+        <div class="filter-row">
+          <button id="btnLoadRekap" class="action-btn btn-primary">Refresh Rekap</button>
+          <span id="rekapSummary" class="subtitle" style="margin:0;"></span>
+        </div>
+
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Token</th>
+                <th>Nama Pemain</th>
+                <th>Posisi / Ket.</th>
+                <th>Status</th>
+                <th>Hadir</th>
+                <th>Persentase</th>
+              </tr>
+            </thead>
+            <tbody id="rekapTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
 
   <script>
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyjKKp4maxqy3T4unEJ7plI4vvW09h_z0sqRSy6iIbCbVTJgDZkiX8Zy42Ry1M7g3-L/exec";
@@ -103,6 +223,24 @@
     let lastQuickToken = "";
     let lastQuickTime = 0;
     const QUICK_BOUNCE_MS = 3000;
+
+    // Navigasi menu
+    document.querySelectorAll(".nav-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".nav-btn").forEach((b) => b.classList.remove("active"));
+        document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+
+        btn.classList.add("active");
+        const targetId = btn.getAttribute("data-target");
+        document.getElementById(targetId).classList.add("active");
+
+        if (targetId === "panel-history") {
+          loadRiwayatAbsensi();
+        } else if (targetId === "panel-rekap") {
+          loadRekapKehadiran();
+        }
+      });
+    });
 
     function setStatus(message, type = "") {
       statusBox.textContent = message;
@@ -165,7 +303,8 @@
         const result = await res.json();
         if (result.ok) {
           setStatus(result.message, "ok");
-          addHistoryItem(token, `${result.player_name || "Hadir"} (${sessionName})`, true);
+          const posLabel = result.position ? ` [${result.position}]` : "";
+          addHistoryItem(token, `${result.player_name || "Hadir"}${posLabel} (${sessionName})`, true);
         } else {
           setStatus(result.message || "Gagal mencatat absensi", "err");
           addHistoryItem(token, result.message || "Ditolak", false);
@@ -205,6 +344,95 @@
       btnStop.disabled = true;
       setStatus("Pemindaian dihentikan.");
     });
+
+    // Riwayat Absensi (GET)
+    async function loadRiwayatAbsensi() {
+      const historyStatus = document.getElementById("historyStatus");
+      const tbody = document.getElementById("historyTableBody");
+      const filterDate = document.getElementById("filterDate").value.trim();
+      const filterSession = document.getElementById("filterSession").value.trim();
+
+      historyStatus.textContent = "Memuat riwayat absensi...";
+      tbody.innerHTML = "";
+
+      try {
+        const params = new URLSearchParams({ action: "history" });
+        if (filterDate) params.set("date", filterDate);
+        if (filterSession) params.set("session", filterSession);
+
+        const res = await fetch(`${APPS_SCRIPT_URL}?${params.toString()}`);
+        const result = await res.json();
+        if (!result.ok) throw new Error(result.message || "Gagal memuat riwayat");
+
+        const rows = result.data || [];
+        historyStatus.textContent = `Menampilkan ${rows.length} catatan kehadiran.`;
+
+        if (rows.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6">Tidak ada data riwayat.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = rows.map((r) => `
+          <tr>
+            <td>${escapeHtml(r.tanggal)}</td>
+            <td>${escapeHtml(r.jam)}</td>
+            <td>${escapeHtml(r.sesi)}</td>
+            <td><strong>${escapeHtml(r.player_name)}</strong></td>
+            <td>${r.position ? `<span class="badge-pos">${escapeHtml(r.position)}</span>` : "-"}</td>
+            <td>${escapeHtml(r.qr_token)}</td>
+          </tr>
+        `).join("");
+      } catch (err) {
+        historyStatus.textContent = "Error memuat riwayat: " + err.message;
+      }
+    }
+
+    // Rekap Kehadiran (GET)
+    async function loadRekapKehadiran() {
+      const summaryEl = document.getElementById("rekapSummary");
+      const tbody = document.getElementById("rekapTableBody");
+
+      summaryEl.textContent = "Memuat rekap...";
+      tbody.innerHTML = "";
+
+      try {
+        const res = await fetch(`${APPS_SCRIPT_URL}?action=rekap`);
+        const result = await res.json();
+        if (!result.ok) throw new Error(result.message || "Gagal memuat rekap");
+
+        const rows = result.data || [];
+        summaryEl.textContent = `Total sesi tercatat: ${result.total_sessions || 0} sesi`;
+
+        if (rows.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6">Belum ada data pemain di tab Players.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = rows.map((r) => `
+          <tr>
+            <td>${escapeHtml(r.qr_token)}</td>
+            <td><strong>${escapeHtml(r.player_name)}</strong></td>
+            <td>${r.position ? `<span class="badge-pos">${escapeHtml(r.position)}</span>` : "-"}</td>
+            <td>${escapeHtml(r.status)}</td>
+            <td><strong>${r.hadir}</strong> / ${r.total_sesi}</td>
+            <td>${r.persentase}%</td>
+          </tr>
+        `).join("");
+      } catch (err) {
+        summaryEl.textContent = "Error memuat rekap: " + err.message;
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    document.getElementById("btnLoadHistory").addEventListener("click", loadRiwayatAbsensi);
+    document.getElementById("btnLoadRekap").addEventListener("click", loadRekapKehadiran);
 
     loadCameras();
   </script>
