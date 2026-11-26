@@ -623,10 +623,10 @@
 
     function escapeHtml(str) {
       return String(str || "")
-        .replace(/&/g, "&")
-        .replace(/</g, "<")
-        .replace(/>/g, ">")
-        .replace(/"/g, """);
+        .replace(/\u0026/g, "\u0026amp;")
+        .replace(/\u003c/g, "\u0026lt;")
+        .replace(/\u003e/g, "\u0026gt;")
+        .replace(/\u0022/g, "\u0026quot;");
     }
 
     function addHistoryItem(token, label, ok) {
