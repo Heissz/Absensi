@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Export QR Code Pemain — Futsal ITDA</title>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <style>
     :root {
@@ -304,6 +304,52 @@ PLY-ITDA-002 | Samuel Gilang | Pivot</textarea>
         .replace(/^_+|_+$/g, "") || "qr";
     }
 
+    function createQrSourceElement(tokenText) {
+      return new Promise((resolve, reject) => {
+        if (typeof QRCode === "undefined") {
+          reject(new Error("Pustaka QRCode tidak tersedia"));
+          return;
+        }
+        const holder = document.createElement("div");
+        holder.style.position = "fixed";
+        holder.style.left = "-9999px";
+        document.body.appendChild(holder);
+
+        try {
+          new QRCode(holder, {
+            text: tokenText,
+            width: 270,
+            height: 270,
+            colorDark: "#0f172a",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.M
+          });
+
+          setTimeout(() => {
+            const canvas = holder.querySelector("canvas");
+            const img = holder.querySelector("img");
+            if (canvas) {
+              document.body.removeChild(holder);
+              resolve(canvas);
+            } else if (img) {
+              const finishImg = () => {
+                document.body.removeChild(holder);
+                resolve(img);
+              };
+              if (img.complete) finishImg();
+              else img.onload = finishImg;
+            } else {
+              document.body.removeChild(holder);
+              reject(new Error("Gagal membuat QR"));
+            }
+          }, 30);
+        } catch (err) {
+          document.body.removeChild(holder);
+          reject(err);
+        }
+      });
+    }
+
     async function renderExportCanvas(item) {
       const canvas = document.createElement("canvas");
       canvas.width = 420;
@@ -317,15 +363,9 @@ PLY-ITDA-002 | Samuel Gilang | Pivot</textarea>
       ctx.lineWidth = 4;
       ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
 
-      const qrTempCanvas = document.createElement("canvas");
-      await QRCode.toCanvas(qrTempCanvas, item.token, {
-        width: 270,
-        margin: 2,
-        color: { dark: "#0f172a", light: "#ffffff" }
-      });
-
-      const qrX = Math.floor((canvas.width - qrTempCanvas.width) / 2);
-      ctx.drawImage(qrTempCanvas, qrX, 38);
+      const qrEl = await createQrSourceElement(item.token);
+      const qrX = Math.floor((canvas.width - 270) / 2);
+      ctx.drawImage(qrEl, qrX, 38, 270, 270);
 
       ctx.fillStyle = "#64748b";
       ctx.font = "700 16px system-ui, sans-serif";
@@ -444,6 +484,11 @@ PLY-ITDA-002 | Samuel Gilang | Pivot</textarea>
         await buildCardsFromItems(parseLines(rawInput.value));
       }
       if (generatedItems.length === 0) return;
+
+      if (typeof JSZip === "undefined") {
+        alert("Pustaka JSZip gagal dimuat. Coba refresh halaman.");
+        return;
+      }
 
       const zip = new JSZip();
       for (const entry of generatedItems) {
