@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Futsal ITDA — Presensi Skuad</title>
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" type="text/javascript"></script>
   <style>
     :root {
       --bg-page: #fcfcfd;
@@ -311,6 +311,7 @@
       background: var(--bg-subtle);
       color: var(--text-muted);
       border: 1px solid var(--border-hairline);
+      word-break: break-word;
     }
 
     .status-ok {
@@ -462,9 +463,9 @@
 
     <div class="nav-group-label">Navigasi</div>
     <div class="nav-list">
-      <button class="nav-btn active" data-target="panel-scan">Pindai QR</button>
-      <button class="nav-btn" data-target="panel-history">Riwayat Absensi</button>
-      <button class="nav-btn" data-target="panel-rekap">Ringkasan</button>
+      <button class="nav-btn active" type="button" data-target="panel-scan">Pindai QR</button>
+      <button class="nav-btn" type="button" data-target="panel-history">Riwayat Absensi</button>
+      <button class="nav-btn" type="button" data-target="panel-rekap">Ringkasan</button>
       <a href="qr-exporter.html" class="nav-link-external">
         <span>Export QR</span>
         <span>↗</span>
@@ -645,7 +646,7 @@
           });
         }
       } catch (err) {
-        // Daftar kamera akan dicoba lagi saat tombol Mulai Kamera ditekan
+        // Akan dicoba ulang saat klik Mulai Kamera
       }
     }
 
@@ -690,32 +691,40 @@
       }
     }
 
+    async function tryStartCamera(target, config) {
+      if (!html5QrCode) {
+        html5QrCode = new Html5Qrcode("reader");
+      }
+      await html5QrCode.start(target, config, onQrDecoded, () => {});
+    }
+
     btnStart.addEventListener("click", async () => {
       if (isScanning) return;
 
       if (typeof Html5Qrcode === "undefined") {
-        setStatus("Pustaka kamera gagal dimuat. Periksa koneksi internet lalu refresh halaman.", "err");
+        setStatus("Pustaka Html5Qrcode gagal dimuat. Cek koneksi internet lalu refresh halaman.", "err");
+        return;
+      }
+
+      if (!window.isSecureContext && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
+        setStatus("Kamera membutuhkan koneksi HTTPS atau localhost.", "err");
         return;
       }
 
       btnStart.disabled = true;
       setStatus("Meminta izin dan membuka kamera...", "wait");
 
+      const config = { fps: 10, qrbox: { width: 220, height: 220 } };
+      const selectedCam = cameraSelect.value;
+
       try {
-        if (!html5QrCode) {
-          html5QrCode = new Html5Qrcode("reader");
-        }
-
-        const config = { fps: 10, qrbox: { width: 220, height: 220 } };
-        const selectedCam = cameraSelect.value;
-
         if (selectedCam) {
-          await html5QrCode.start(selectedCam, config, onQrDecoded, () => {});
+          await tryStartCamera(selectedCam, config);
         } else {
           try {
-            await html5QrCode.start({ facingMode: "environment" }, config, onQrDecoded, () => {});
+            await tryStartCamera({ facingMode: "environment" }, config);
           } catch (envErr) {
-            await html5QrCode.start({ facingMode: "user" }, config, onQrDecoded, () => {});
+            await tryStartCamera({ facingMode: "user" }, config);
           }
         }
 
@@ -724,11 +733,11 @@
         setStatus("Kamera aktif. Arahkan ke QR pemain...", "ok");
         populateCameraList();
       } catch (err) {
-        console.error("Gagal memulai kamera:", err);
+        console.error("Error kamera:", err);
         btnStart.disabled = false;
         btnStop.disabled = true;
         const msg = (err && err.message) ? err.message : String(err);
-        setStatus("Gagal membuka kamera: " + msg + " (Pastikan akses HTTPS/localhost & izin kamera aktif).", "err");
+        setStatus("Error kamera: " + msg, "err");
       }
     });
 
