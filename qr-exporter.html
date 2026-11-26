@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Export QR Code Pemain — Futsal ITDA</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <style>
+    :root {
+      --bg-page: #fcfcfd;
+      --bg-surface: #ffffff;
+      --bg-subtle: #f8fafc;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-hairline: #e2e8f0;
+      --accent: #0f766e;
+      --accent-soft: #f0fdfa;
+      --accent-border: #99f6e4;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg-page);
+      color: var(--text-main);
+      padding: 28px 20px;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    .header {
+      margin-bottom: 20px;
+    }
+
+    .header h1 {
+      margin: 0 0 4px;
+      font-size: 1.4rem;
+      letter-spacing: -0.02em;
+    }
+
+    .header p {
+      margin: 0;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 18px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border-hairline);
+      font-size: 0.86rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      color: var(--text-main);
+      background: var(--bg-subtle);
+      resize: vertical;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-top: 12px;
+    }
+
+    .btn {
+      padding: 10px 15px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      font-size: 0.86rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: #115e59;
+    }
+
+    .btn-ghost {
+      background: var(--bg-surface);
+      color: var(--text-main);
+      border-color: var(--border-hairline);
+    }
+
+    .btn-ghost:hover {
+      background: var(--bg-subtle);
+    }
+
+    .meta {
+      font-size: 0.84rem;
+      color: var(--text-muted);
+      margin-left: auto;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 14px;
+    }
+
+    .qr-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .qr-card canvas {
+      width: 160px;
+      height: 160px;
+      border-radius: 8px;
+    }
+
+    .player-name {
+      margin-top: 10px;
+      font-weight: 700;
+      font-size: 0.92rem;
+    }
+
+    .player-pos {
+      margin-top: 3px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: var(--accent);
+      background: var(--accent-soft);
+      border: 1px solid var(--accent-border);
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+
+    .player-token {
+      margin-top: 6px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    .qr-card .btn {
+      margin-top: 10px;
+      width: 100%;
+      padding: 8px 10px;
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Export QR Code Pemain</h1>
+      <p>Tempel data dari Google Sheets (format: <code>qr_token | nama | posisi</code> atau koma/tab) lalu export PNG atau ZIP.</p>
+    </div>
+
+    <div class="card">
+      <textarea id="rawInput" placeholder="Contoh:
+FTS001 | Budi Santoso | Anchor
+FTS002 | Samuel Gilang | Pivot
+FTS003 | Duta Khairi | Ass Coach">FTS001 | Budi Santoso | Anchor
+FTS002 | Samuel Gilang | Pivot
+FTS003 | Duta Khairi | Ass Coach</textarea>
+
+      <div class="toolbar">
+        <button id="btnGenerate" class="btn btn-primary">Buat Pratinjau QR</button>
+        <button id="btnDownloadZip" class="btn btn-ghost">Export Semua (.ZIP)</button>
+        <span id="infoCount" class="meta">0 kartu siap</span>
+      </div>
+    </div>
+
+    <div id="qrGrid" class="grid"></div>
+  </div>
+
+  <script>
+    const rawInput = document.getElementById("rawInput");
+    const qrGrid = document.getElementById("qrGrid");
+    const infoCount = document.getElementById("infoCount");
+    const btnGenerate = document.getElementById("btnGenerate");
+    const btnDownloadZip = document.getElementById("btnDownloadZip");
+
+    let generatedItems = [];
+
+    function parseLines(text) {
+      return text
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line) => {
+          // Mendukung pemisah pipe (|), tab (copy dari Sheets), atau koma (,)
+          const parts = line.split(/\t|\||,/).map((p) => p.trim());
+          return {
+            token: parts[0] || "",
+            name: parts[1] || parts[0] || "",
+            position: parts[2] || ""
+          };
+        })
+        .filter((item) => item.token);
+    }
+
+    function sanitizeFilename(str) {
+      return String(str || "qr")
+        .trim()
+        .replace(/[^a-zA-Z0-9_-]+/g, "_")
+        .replace(/^_+|_+$/g, "") || "qr";
+    }
+
+    async function renderExportCanvas(item) {
+      // Buat canvas kartu berlabel agar mudah dibagikan ke pemain
+      const canvas = document.createElement("canvas");
+      canvas.width = 420;
+      canvas.height = 500;
+      const ctx = canvas.getContext("2d");
+
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = "#e2e8f0";
+      ctx.lineWidth = 4;
+      ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+
+      // Render QR murni berisi qr_token
+      const qrTempCanvas = document.createElement("canvas");
+      await QRCode.toCanvas(qrTempCanvas, item.token, {
+        width: 280,
+        margin: 2,
+        color: { dark: "#0f172a", light: "#ffffff" }
+      });
+
+      const qrX = Math.floor((canvas.width - qrTempCanvas.width) / 2);
+      ctx.drawImage(qrTempCanvas, qrX, 42);
+
+      ctx.fillStyle = "#0f172a";
+      ctx.font = "bold 24px system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(item.name, canvas.width / 2, 365);
+
+      if (item.position) {
+        ctx.fillStyle = "#0f766e";
+        ctx.font = "600 17px system-ui, sans-serif";
+        ctx.fillText(item.position, canvas.width / 2, 396);
+      }
+
+      ctx.fillStyle = "#64748b";
+      ctx.font = "15px ui-monospace, monospace";
+      ctx.fillText(item.token, canvas.width / 2, 434);
+
+      return canvas;
+    }
+
+    function downloadDataUrl(dataUrl, filename) {
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    async function buildCards() {
+      const items = parseLines(rawInput.value);
+      qrGrid.innerHTML = "";
+      generatedItems = [];
+
+      for (const item of items) {
+        const card = document.createElement("div");
+        card.className = "qr-card";
+
+        const canvas = await renderExportCanvas(item);
+        const filename = `${sanitizeFilename(item.token)}_${sanitizeFilename(item.name)}.png`;
+        generatedItems.push({ ...item, canvas, filename });
+
+        const btnSingle = document.createElement("button");
+        btnSingle.className = "btn btn-ghost";
+        btnSingle.textContent = "Unduh PNG";
+        btnSingle.addEventListener("click", () => {
+          downloadDataUrl(canvas.toDataURL("image/png"), filename);
+        });
+
+        card.appendChild(canvas);
+
+        const nameEl = document.createElement("div");
+        nameEl.className = "player-name";
+        nameEl.textContent = item.name;
+        card.appendChild(nameEl);
+
+        if (item.position) {
+          const posEl = document.createElement("div");
+          posEl.className = "player-pos";
+          posEl.textContent = item.position;
+          card.appendChild(posEl);
+        }
+
+        const tokEl = document.createElement("div");
+        tokEl.className = "player-token";
+        tokEl.textContent = item.token;
+        card.appendChild(tokEl);
+
+        card.appendChild(btnSingle);
+        qrGrid.appendChild(card);
+      }
+
+      infoCount.textContent = `${generatedItems.length} kartu siap`;
+    }
+
+    async function exportAllAsZip() {
+      if (generatedItems.length === 0) {
+        await buildCards();
+      }
+      if (generatedItems.length === 0) return;
+
+      const zip = new JSZip();
+      for (const entry of generatedItems) {
+        const base64 = entry.canvas.toDataURL("image/png").split(",")[1];
+        zip.file(entry.filename, base64, { base64: true });
+      }
+
+      const blob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(blob);
+      downloadDataUrl(url, "qr_pemain_futsal_itda.zip");
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    }
+
+    btnGenerate.addEventListener("click", buildCards);
+    btnDownloadZip.addEventListener("click", exportAllAsZip);
+
+    buildCards();
+  </script>
+</body>
+</html>
