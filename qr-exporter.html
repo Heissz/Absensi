@@ -3,62 +3,73 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Export QR Code Pemain — Futsal ITDA</title>
-  <!-- Google Fonts: Plus Jakarta Sans & Inter -->
+  <meta name="theme-color" content="#0f766e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>Export QR — Futsal ITDA</title>
+  <link rel="manifest" href="manifest.json" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
-  <!-- Pustaka JSZip untuk Unduh Massal -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-  <!-- Stylesheet Terpisah -->
+  <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
   <link rel="stylesheet" href="qr-exporter.css" />
 </head>
 <body>
+  <div class="ambient-canvas" aria-hidden="true">
+    <div class="ambient-orb orb-1"></div>
+    <div class="ambient-orb orb-2"></div>
+    <div class="ambient-orb orb-3"></div>
+  </div>
+
   <div class="container">
-    <header class="header">
+    <header class="header no-print">
       <div>
-        <div class="header-kicker">Generator Kartu</div>
-        <h1>Export QR Code Pemain</h1>
-        <p>Tarik data dari spreadsheet atau tempel daftar pemain untuk mengunduh kartu QR.</p>
+        <div class="header-kicker">Generator QR</div>
+        <h1>Export QR</h1>
+        <p>Tarik data dari spreadsheet atau tempel daftar pemain untuk mengunduh atau mencetak kartu QR.</p>
       </div>
-      <a href="index.html" class="back-link">
-        <span>←</span>
-        <span>Kembali ke Presensi</span>
-      </a>
+      <a href="index.html" class="back-link">Kembali ke Presensi</a>
     </header>
 
-    <div class="card">
+    <div class="card glass-panel no-print">
       <div class="toolbar">
         <button id="btnFetchDb" type="button" class="btn btn-primary">Ambil dari Database</button>
         <button id="btnGenerate" type="button" class="btn btn-ghost">Tampilkan Preview</button>
         <button id="btnClearInput" type="button" class="btn btn-ghost">Bersihkan</button>
+
         <label class="check-label">
           <input id="onlyActiveCheck" type="checkbox" checked />
           <span>Hanya status <code>active</code></span>
         </label>
+
+        <label class="check-label">
+          <input id="includeLabelCheck" type="checkbox" checked />
+          <span>Sertakan Nama & Posisi pada PNG</span>
+        </label>
+
         <span id="infoCount" class="meta">Siap memuat data pemain.</span>
       </div>
 
       <textarea id="rawInput" placeholder="Format per baris: token_qr | nama | posisi&#10;Contoh: PLY-ITDA-001 | Rizky Pratama | Coach"></textarea>
     </div>
 
-    <div class="preview-header">
+    <div class="preview-header no-print">
       <div class="preview-left">
         <h2 class="preview-title">Preview Kartu QR</h2>
         <span id="cardCounterBadge" class="count-badge">0 Kartu</span>
       </div>
       <div class="preview-actions">
         <input id="searchCardInput" class="search-card-input" type="search" placeholder="Cari kartu pemain..." />
+        <button id="btnPrintA4" type="button" class="btn btn-ghost" disabled>Cetak Lembar A4</button>
         <button id="btnDownloadZip" type="button" class="btn btn-primary" disabled>Unduh Semua (.ZIP)</button>
       </div>
     </div>
 
     <div id="qrGrid" class="grid">
-      <div class="empty-grid-state">Belum ada preview kartu. Klik <strong>Ambil dari Database</strong> lalu <strong>Tampilkan Preview</strong>.</div>
+      <div class="empty-grid-state glass-panel">Belum ada preview kartu. Klik <strong>Ambil dari Database</strong> lalu <strong>Tampilkan Preview</strong>.</div>
     </div>
   </div>
 
-  <!-- Script Logika Export QR -->
   <script src="qr-exporter.js"></script>
 </body>
 </html>

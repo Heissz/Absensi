@@ -3,205 +3,418 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0f766e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Futsal ITDA" />
   <title>Futsal ITDA — Presensi Skuad</title>
-  <!-- Google Fonts: Plus Jakarta Sans & Inter -->
+  <link rel="manifest" href="manifest.json" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
-  <!-- Pustaka Pemindai QR Code -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-  <!-- Stylesheet Terpisah -->
   <link rel="stylesheet" href="index.css" />
 </head>
 <body>
-  <aside class="sidebar">
-    <div class="brand-wrap">
-      <div class="brand-badge">
-        <span class="pulse-dot"></span>
-        <span>Presensi Digital</span>
-      </div>
-      <h2 class="brand-title">Futsal ITDA</h2>
-      <p class="brand-sub">Sistem Kehadiran Skuad</p>
+  <div class="ambient-canvas" aria-hidden="true">
+    <div class="ambient-orb orb-1"></div>
+    <div class="ambient-orb orb-2"></div>
+    <div class="ambient-orb orb-3"></div>
+  </div>
+
+  <!-- Kartu Konfirmasi Besar Saat Scan / Absensi -->
+  <div id="scanResultOverlay" class="scan-overlay is-hidden" role="status" aria-live="polite">
+    <div id="scanResultCard" class="scan-result-card">
+      <div id="scanResultIcon" class="scan-result-icon">✓</div>
+      <div id="scanResultTitle" class="scan-result-title">Tercatat Hadir</div>
+      <div id="scanResultName" class="scan-result-name">Nama Pemain</div>
+      <div id="scanResultMeta" class="scan-result-meta">PLY-ITDA-001 • Pivot</div>
+      <div id="scanResultSub" class="scan-result-sub">Latihan Rutin</div>
     </div>
+  </div>
 
-    <div class="nav-group-label">Menu Utama</div>
-    <nav class="nav-list">
-      <button class="nav-btn active" type="button" data-target="panel-scan">
-        <span class="nav-label">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg>
-          <span>Pindai QR</span>
-        </span>
-      </button>
-      <button class="nav-btn" type="button" data-target="panel-history">
-        <span class="nav-label">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          <span>Riwayat Absensi</span>
-        </span>
-      </button>
-      <button class="nav-btn" type="button" data-target="panel-rekap">
-        <span class="nav-label">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-          <span>Ringkasan</span>
-        </span>
-      </button>
-      <a href="qr-exporter.html" class="nav-link-external">
-        <span class="nav-label">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><path d="M3 14h7v7H3z"/></svg>
-          <span>Export Kartu QR</span>
-        </span>
-        <span class="arrow-icon">↗</span>
-      </a>
-    </nav>
-
-    <div class="sidebar-note">
-      <div class="note-title">Aturan Sesi</div>
-      Satu kode QR hanya berlaku satu kali pemindaian pada nama sesi yang sama.
-    </div>
-  </aside>
-
-  <main class="main">
-    <!-- Panel Pemindaian QR -->
-    <section id="panel-scan" class="panel active">
-      <div class="page-header">
-        <div>
-          <h1>Pindai QR Pemain</h1>
-          <p>Pilih atau ketik nama sesi, lalu arahkan kamera ke kartu QR anggota.</p>
+  <div class="app-shell">
+    <aside class="sidebar glass-panel">
+      <div class="brand-wrap">
+        <div class="brand-badge">
+          <span class="pulse-dot"></span>
+          <span>Presensi Digital</span>
         </div>
-        <div id="cameraBadge" class="live-pill">
-          <span class="dot"></span>
-          <span id="cameraBadgeText">Kamera Siaga</span>
-        </div>
+        <h2 class="brand-title">Futsal ITDA</h2>
+        <p class="brand-sub">Sistem Kehadiran Skuad</p>
       </div>
 
-      <div class="scan-layout">
-        <div class="card">
-          <div class="session-block">
-            <div class="session-header">
-              <label for="sessionInput">Nama Sesi Aktif</label>
-              <div class="preset-chips">
-                <button type="button" class="chip-btn active" data-session="Latihan Rutin">Latihan Rutin</button>
-                <button type="button" class="chip-btn" data-session="Sparring">Sparring</button>
-                <button type="button" class="chip-btn" data-session="Turnamen">Turnamen</button>
+      <div class="nav-group-label">Menu Utama</div>
+      <nav class="nav-list">
+        <button class="nav-btn active" type="button" data-target="panel-scan">
+          <span class="nav-label">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><rect x="7" y="7" width="10" height="10" rx="2"/></svg>
+            <span>Pindai QR</span>
+          </span>
+        </button>
+        <button class="nav-btn" type="button" data-target="panel-history">
+          <span class="nav-label">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span>Riwayat Absensi</span>
+          </span>
+        </button>
+        <button class="nav-btn" type="button" data-target="panel-rekap">
+          <span class="nav-label">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            <span>Ringkasan</span>
+          </span>
+        </button>
+        <button class="nav-btn" type="button" data-target="panel-skuad">
+          <span class="nav-label">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span>Kelola Skuad</span>
+          </span>
+        </button>
+        <a href="qr-exporter.html" class="nav-link-external">
+          <span>Export QR</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-note">
+        <div class="note-title">Otomatisasi Alfa</div>
+        Pemain aktif yang tidak memiliki catatan Hadir, Izin, atau Sakit pada sesi hari ini akan otomatis tercatat <strong>Alfa</strong> pada akhir hari.
+      </div>
+    </aside>
+
+    <main class="main">
+      <!-- Panel Pemindaian QR & Absensi Manual -->
+      <section id="panel-scan" class="panel active">
+        <div class="page-header">
+          <div>
+            <h1>Pindai QR Pemain</h1>
+            <p>Pilih nama sesi, arahkan kamera ke kartu QR, atau gunakan Absensi Manual di bawah.</p>
+          </div>
+          <div class="header-badges">
+            <button id="btnSyncOffline" type="button" class="live-pill glass-pill offline-pill is-hidden" title="Kirim ulang antrean offline">
+              <span id="offlineBadgeText">0 Antrean Offline</span>
+            </button>
+            <button id="btnToggleSound" type="button" class="live-pill glass-pill sound-toggle is-on" title="Suara & Getar">
+              <span id="soundBadgeText">Audio Aktif</span>
+            </button>
+            <div id="cameraBadge" class="live-pill glass-pill">
+              <span class="dot"></span>
+              <span id="cameraBadgeText">Kamera Siaga</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="scan-layout">
+          <div class="card glass-panel">
+            <!-- Pengaturan Panitia & PIN -->
+            <div class="panitia-bar">
+              <div class="field-group grow">
+                <label for="scannerIdInput">ID / Nama Panitia</label>
+                <input id="scannerIdInput" type="text" placeholder="Contoh: PANITIA-01" />
+              </div>
+              <div class="field-group">
+                <label for="pinInput">PIN Keamanan</label>
+                <input id="pinInput" type="password" placeholder="Default: 1234" maxlength="12" />
               </div>
             </div>
-            <input
-              id="sessionInput"
-              class="session-input"
-              type="text"
-              value="Latihan Rutin"
-              placeholder="Ketik nama sesi lainnya..."
-            />
-          </div>
 
-          <div class="scanner-frame">
-            <div id="reader"></div>
-
-            <div class="controls">
-              <select id="cameraSelect" class="cam-select" aria-label="Pilih Kamera"></select>
-              <button id="btnStart" type="button" class="btn btn-primary">Mulai Kamera</button>
-              <button id="btnStop" type="button" class="btn btn-ghost" disabled>Hentikan</button>
+            <!-- Sesi Aktif -->
+            <div class="session-block">
+              <div class="session-header">
+                <label for="sessionInput">Nama Sesi Aktif</label>
+                <div class="preset-chips">
+                  <button type="button" class="chip-btn active" data-session="Latihan Rutin">Latihan Rutin</button>
+                  <button type="button" class="chip-btn" data-session="Sparring">Sparring</button>
+                  <button type="button" class="chip-btn" data-session="Turnamen">Turnamen</button>
+                </div>
+              </div>
+              <input
+                id="sessionInput"
+                class="session-input"
+                type="text"
+                value="Latihan Rutin"
+                placeholder="Ketik nama sesi lainnya..."
+              />
             </div>
 
-            <div id="statusBox" class="status-box">Siap memindai QR pemain...</div>
+            <!-- Pemindai Kamera -->
+            <div class="scanner-frame">
+              <div id="reader"></div>
+
+              <div class="controls">
+                <select id="cameraSelect" class="cam-select" aria-label="Pilih Kamera"></select>
+                <button id="btnStart" type="button" class="btn btn-primary">Mulai Kamera</button>
+                <button id="btnStop" type="button" class="btn btn-ghost" disabled>Hentikan</button>
+              </div>
+
+              <div id="statusBox" class="status-box">Siap memindai QR pemain...</div>
+            </div>
+
+            <!-- Absensi Manual (Pencarian Ketik + Hadir / Izin / Sakit) -->
+            <div class="manual-box">
+              <div class="manual-head">
+                <span class="manual-title">Absensi Manual</span>
+                <button id="btnRefreshPlayers" type="button" class="link-btn">Muat Ulang Skuad</button>
+              </div>
+
+              <div class="manual-grid">
+                <div class="autocomplete-wrap">
+                  <input
+                    id="manualPlayerSearch"
+                    type="text"
+                    autocomplete="off"
+                    placeholder="Ketik nama pemain atau token..."
+                    aria-label="Cari Nama Pemain"
+                  />
+                  <input id="manualSelectedToken" type="hidden" />
+                  <ul id="manualSuggestionList" class="suggestion-list is-hidden"></ul>
+                </div>
+
+                <select id="manualStatusSelect" aria-label="Status Kehadiran">
+                  <option value="Hadir">Hadir</option>
+                  <option value="Izin">Izin</option>
+                  <option value="Sakit">Sakit</option>
+                </select>
+              </div>
+
+              <div class="manual-controls">
+                <input
+                  id="manualNoteInput"
+                  type="text"
+                  class="grow"
+                  placeholder="Keterangan (opsional, misal: Ujian / Demam / Lupa kartu)"
+                />
+                <button id="btnManualSubmit" type="button" class="btn btn-primary">Simpan Absensi</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Log Sesi Ini + Undo -->
+          <div class="card glass-panel log-card">
+            <div class="card-head-row">
+              <h3 class="card-title">Log Sesi Ini</h3>
+              <div class="log-actions">
+                <button id="btnUndoLast" type="button" class="link-btn danger-link" disabled title="Hapus catatan terakhir dari database">Batalkan Terakhir</button>
+                <span id="sessionScanCount" class="count-badge">0 Masuk</span>
+              </div>
+            </div>
+            <ul id="scanHistory" class="mini-list">
+              <li class="empty-placeholder">Belum ada catatan pada sesi ini.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- Panel Riwayat Absensi -->
+      <section id="panel-history" class="panel">
+        <div class="page-header">
+          <div>
+            <h1>Riwayat Absensi</h1>
+            <p>Catatan kehadiran harian meliputi status Hadir, Izin, Sakit, dan Alfa.</p>
+          </div>
+          <button id="btnExportHistoryCsv" type="button" class="btn btn-ghost">Unduh CSV</button>
+        </div>
+
+        <div class="card glass-panel">
+          <div class="filter-bar">
+            <div class="field-group">
+              <label for="filterDate">Tanggal</label>
+              <input id="filterDate" type="date" />
+            </div>
+            <div class="field-group">
+              <label for="filterSession">Sesi</label>
+              <input id="filterSession" type="text" placeholder="Semua sesi..." />
+            </div>
+            <div class="field-group">
+              <label for="filterAttStatus">Status</label>
+              <select id="filterAttStatus">
+                <option value="">Semua Status</option>
+                <option value="Hadir">Hadir</option>
+                <option value="Izin">Izin</option>
+                <option value="Sakit">Sakit</option>
+                <option value="Alfa">Alfa</option>
+              </select>
+            </div>
+            <div class="field-group grow">
+              <label for="searchHistoryInput">Cari Cepat</label>
+              <input id="searchHistoryInput" type="search" placeholder="Cari nama, keterangan, atau token..." />
+            </div>
+            <button id="btnLoadHistory" type="button" class="btn btn-primary">Muat Data</button>
+          </div>
+
+          <div id="historyStatus" class="meta-muted">Pilih filter atau klik Muat Data untuk menampilkan log.</div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tanggal</th>
+                  <th>Jam</th>
+                  <th>Sesi</th>
+                  <th>Nama</th>
+                  <th>Status</th>
+                  <th>Keterangan</th>
+                  <th>Token</th>
+                  <th>Ubah Status</th>
+                </tr>
+              </thead>
+              <tbody id="historyTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Panel Rekapitulasi Kehadiran -->
+      <section id="panel-rekap" class="panel">
+        <div class="page-header">
+          <div>
+            <h1>Ringkasan Kehadiran</h1>
+            <p>Akumulasi Hadir, Izin, Sakit, dan Alfa setiap anggota skuad.</p>
+          </div>
+          <div class="header-badges">
+            <span id="rekapSummary" class="count-badge">Total sesi: 0</span>
+            <button id="btnExportRekapCsv" type="button" class="btn btn-ghost">Unduh CSV</button>
           </div>
         </div>
 
-        <div class="card log-card">
-          <div class="card-head-row">
-            <h3 class="card-title">Log Sesi Ini</h3>
-            <span id="sessionScanCount" class="count-badge">0 Masuk</span>
+        <div class="card glass-panel">
+          <div class="filter-bar">
+            <div class="field-group">
+              <label for="rekapMonthInput">Filter Bulan</label>
+              <input id="rekapMonthInput" type="month" />
+            </div>
+            <div class="field-group grow">
+              <label for="searchRekapInput">Cari Pemain</label>
+              <input id="searchRekapInput" type="search" placeholder="Filter nama pemain atau posisi..." />
+            </div>
+            <button id="btnLoadRekap" type="button" class="btn btn-primary">Perbarui Ringkasan</button>
           </div>
-          <ul id="scanHistory" class="mini-list">
-            <li class="empty-placeholder">Belum ada pemindaian pada sesi ini.</li>
-          </ul>
-        </div>
-      </div>
-    </section>
 
-    <!-- Panel Riwayat Absensi -->
-    <section id="panel-history" class="panel">
-      <div class="page-header">
-        <div>
-          <h1>Riwayat Absensi</h1>
-          <p>Telusuri catatan kehadiran harian berdasarkan tanggal, sesi, atau nama pemain.</p>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="filter-bar">
-          <div class="field-group">
-            <label for="filterDate">Tanggal</label>
-            <input id="filterDate" type="date" />
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nama</th>
+                  <th>Posisi</th>
+                  <th>Hadir</th>
+                  <th>Izin</th>
+                  <th>Sakit</th>
+                  <th>Alfa</th>
+                  <th>Rasio Hadir</th>
+                </tr>
+              </thead>
+              <tbody id="rekapTableBody"></tbody>
+            </table>
           </div>
-          <div class="field-group">
-            <label for="filterSession">Sesi</label>
-            <input id="filterSession" type="text" placeholder="Semua sesi..." />
+        </div>
+      </section>
+
+      <!-- Panel Kelola Skuad & Ganti PIN -->
+      <section id="panel-skuad" class="panel">
+        <div class="page-header">
+          <div>
+            <h1>Kelola Skuad & Keamanan</h1>
+            <p>Tambah anggota skuad baru, ubah status aktif pemain, serta perbarui PIN panitia.</p>
           </div>
-          <div class="field-group grow">
-            <label for="searchHistoryInput">Cari Cepat</label>
-            <input id="searchHistoryInput" type="search" placeholder="Cari nama, posisi, atau token..." />
+          <span id="skuadCountBadge" class="count-badge">0 Pemain</span>
+        </div>
+
+        <div class="skuad-top-grid">
+          <!-- Form Tambah Anggota Skuad -->
+          <div class="card glass-panel">
+            <div class="card-head-row">
+              <h3 class="card-title">Tambah Pemain Baru</h3>
+              <button id="btnAutoToken" type="button" class="link-btn">Isi Token Otomatis</button>
+            </div>
+
+            <div class="skuad-form-grid">
+              <div class="field-group">
+                <label for="newPlayerToken">Token QR</label>
+                <input id="newPlayerToken" type="text" placeholder="PLY-ITDA-016" />
+              </div>
+              <div class="field-group">
+                <label for="newPlayerName">Nama Lengkap</label>
+                <input id="newPlayerName" type="text" placeholder="Nama pemain..." />
+              </div>
+              <div class="field-group">
+                <label for="newPlayerPos">Posisi / Peran</label>
+                <select id="newPlayerPos">
+                  <option value="Pivot">Pivot</option>
+                  <option value="Anchor">Anchor</option>
+                  <option value="Flank">Flank</option>
+                  <option value="Kiper">Kiper</option>
+                  <option value="Coach">Coach</option>
+                  <option value="Official">Official</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label for="newPlayerStatus">Status Awal</label>
+                <select id="newPlayerStatus">
+                  <option value="active">active</option>
+                  <option value="inactive">inactive</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="skuad-form-actions">
+              <span id="addPlayerFeedback" class="meta-muted">Memerlukan PIN Keamanan aktif.</span>
+              <button id="btnAddPlayer" type="button" class="btn btn-primary">Simpan Pemain</button>
+            </div>
           </div>
-          <button id="btnLoadHistory" type="button" class="btn btn-primary">Muat Data</button>
-        </div>
 
-        <div id="historyStatus" class="meta-muted">Pilih filter atau klik Muat Data untuk menampilkan log.</div>
+          <!-- Form Ubah PIN Keamanan -->
+          <div class="card glass-panel">
+            <div class="card-head-row">
+              <h3 class="card-title">Ubah PIN Panitia</h3>
+              <span class="meta-muted">PIN Bawaan: 1234</span>
+            </div>
 
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Tanggal</th>
-                <th>Jam</th>
-                <th>Sesi</th>
-                <th>Nama</th>
-                <th>Posisi / Ket.</th>
-                <th>Token</th>
-              </tr>
-            </thead>
-            <tbody id="historyTableBody"></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
+            <div class="pin-change-fields">
+              <div class="field-group">
+                <label for="oldPinChangeInput">PIN Saat Ini</label>
+                <input id="oldPinChangeInput" type="password" placeholder="Masukkan PIN lama..." maxlength="12" />
+              </div>
+              <div class="field-group">
+                <label for="newPinChangeInput">PIN Baru</label>
+                <input id="newPinChangeInput" type="password" placeholder="Masukkan PIN baru..." maxlength="12" />
+              </div>
+            </div>
 
-    <!-- Panel Rekapitulasi Kehadiran -->
-    <section id="panel-rekap" class="panel">
-      <div class="page-header">
-        <div>
-          <h1>Ringkasan Kehadiran</h1>
-          <p>Statistik partisipasi setiap pemain dari seluruh sesi yang tercatat.</p>
-        </div>
-        <span id="rekapSummary" class="count-badge">Total sesi: 0</span>
-      </div>
-
-      <div class="card">
-        <div class="filter-bar">
-          <div class="field-group grow">
-            <input id="searchRekapInput" type="search" placeholder="Filter nama pemain atau posisi..." />
+            <div class="skuad-form-actions">
+              <span id="pinChangeFeedback" class="meta-muted">Tersimpan langsung ke database.</span>
+              <button id="btnChangePin" type="button" class="btn btn-ghost">Perbarui PIN</button>
+            </div>
           </div>
-          <button id="btnLoadRekap" type="button" class="btn btn-primary">Perbarui Ringkasan</button>
         </div>
 
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Token</th>
-                <th>Nama</th>
-                <th>Posisi / Ket.</th>
-                <th>Status</th>
-                <th>Hadir</th>
-                <th>Rasio</th>
-              </tr>
-            </thead>
-            <tbody id="rekapTableBody"></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-  </main>
+        <!-- Tabel Daftar Seluruh Skuad -->
+        <div class="card glass-panel">
+          <div class="filter-bar">
+            <div class="field-group grow">
+              <label for="searchSkuadInput">Cari Anggota Skuad</label>
+              <input id="searchSkuadInput" type="search" placeholder="Cari nama, token, atau posisi..." />
+            </div>
+            <button id="btnReloadSkuadTable" type="button" class="btn btn-primary">Muat Ulang Daftar</button>
+          </div>
 
-  <!-- Script Logika Presensi -->
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Token QR</th>
+                  <th>Nama Pemain</th>
+                  <th>Posisi</th>
+                  <th>Status</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="skuadTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
   <script src="index.js"></script>
 </body>
 </html>
