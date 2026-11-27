@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-  <link rel="stylesheet" href="index.css?v=4" />
+  <link rel="stylesheet" href="index.css?v=6" />
 </head>
 <body>
   <div class="ambient-canvas" aria-hidden="true">
@@ -46,7 +46,8 @@
       </div>
 
       <div class="nav-group-label">Menu Utama</div>
-      <nav class="nav-list">
+      <nav class="nav-list" id="mainNavList">
+        <div class="nav-active-pill" id="navActivePill" aria-hidden="true"></div>
         <button class="nav-btn active" type="button" data-target="panel-scan">
           <span class="nav-label">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><rect x="7" y="7" width="10" height="10" rx="2"/></svg>
@@ -83,7 +84,7 @@
     </aside>
 
     <main class="main">
-      <!-- Panel Pemindaian QR & Absensi Manual -->
+      <!-- Panel 1: Pemindaian QR & Absensi Manual -->
       <section id="panel-scan" class="panel active">
         <div class="page-header">
           <div>
@@ -150,7 +151,7 @@
               <div id="statusBox" class="status-box">Siap memindai QR pemain...</div>
             </div>
 
-            <!-- Absensi Manual (Pencarian Ketik + Hadir / Izin / Sakit) -->
+            <!-- Absensi Manual -->
             <div class="manual-box">
               <div class="manual-head">
                 <span class="manual-title">Absensi Manual</span>
@@ -205,14 +206,17 @@
         </div>
       </section>
 
-      <!-- Panel Riwayat Absensi -->
+      <!-- Panel 2: Riwayat Absensi -->
       <section id="panel-history" class="panel">
         <div class="page-header">
           <div>
             <h1>Riwayat Absensi</h1>
             <p>Catatan kehadiran harian meliputi status Hadir, Izin, Sakit, dan Alfa.</p>
           </div>
-          <button id="btnExportHistoryCsv" type="button" class="btn btn-ghost">Unduh CSV</button>
+          <div class="header-badges">
+            <button id="btnCopyWaHistory" type="button" class="btn btn-ghost">Salin Teks WA</button>
+            <button id="btnExportHistoryCsv" type="button" class="btn btn-ghost">Unduh CSV</button>
+          </div>
         </div>
 
         <div class="card glass-panel">
@@ -229,10 +233,10 @@
               <label for="filterAttStatus">Status</label>
               <select id="filterAttStatus">
                 <option value="">Semua Status</option>
-                <option value="Hadir">Hadir</option>
-                <option value="Izin">Izin</option>
-                <option value="Sakit">Sakit</option>
-                <option value="Alfa">Alfa</option>
+                <option value="hadir">Hadir</option>
+                <option value="izin">Izin</option>
+                <option value="sakit">Sakit</option>
+                <option value="alfa">Alfa</option>
               </select>
             </div>
             <div class="field-group grow">
@@ -242,7 +246,7 @@
             <button id="btnLoadHistory" type="button" class="btn btn-primary">Muat Data</button>
           </div>
 
-          <div id="historyStatus" class="meta-muted">Pilih filter atau klik Muat Data untuk menampilkan log.</div>
+          <div id="historyStatus" class="meta-info">Menampilkan catatan terbaru.</div>
 
           <div class="table-wrap">
             <table>
@@ -251,7 +255,7 @@
                   <th>Tanggal</th>
                   <th>Jam</th>
                   <th>Sesi</th>
-                  <th>Nama</th>
+                  <th>Nama Pemain</th>
                   <th>Status</th>
                   <th>Keterangan</th>
                   <th>Token</th>
@@ -264,16 +268,40 @@
         </div>
       </section>
 
-      <!-- Panel Rekapitulasi Kehadiran -->
+      <!-- Panel 3: Ringkasan Kehadiran -->
       <section id="panel-rekap" class="panel">
         <div class="page-header">
           <div>
             <h1>Ringkasan Kehadiran</h1>
-            <p>Akumulasi Hadir, Izin, Sakit, dan Alfa setiap anggota skuad.</p>
+            <p>Akumulasi jumlah kehadiran, izin, sakit, dan alfa seluruh anggota skuad.</p>
           </div>
           <div class="header-badges">
             <span id="rekapSummary" class="count-badge">Total sesi: 0</span>
             <button id="btnExportRekapCsv" type="button" class="btn btn-ghost">Unduh CSV</button>
+          </div>
+        </div>
+
+        <!-- 4 Kartu Statistik Cepat (KPI Cards) -->
+        <div class="kpi-grid">
+          <div class="kpi-card glass-panel">
+            <span class="kpi-label">Skuad Aktif</span>
+            <strong id="kpiActiveSquad" class="kpi-value">0</strong>
+            <span class="kpi-sub">Pemain terdaftar</span>
+          </div>
+          <div class="kpi-card glass-panel">
+            <span class="kpi-label">Rata-rata Kehadiran</span>
+            <strong id="kpiAvgAttendance" class="kpi-value">0%</strong>
+            <span class="kpi-sub">Persentase tim</span>
+          </div>
+          <div class="kpi-card glass-panel">
+            <span class="kpi-label">Total Sesi</span>
+            <strong id="kpiTotalSessions" class="kpi-value">0</strong>
+            <span class="kpi-sub">Sesi tercatat</span>
+          </div>
+          <div class="kpi-card glass-panel">
+            <span class="kpi-label">Kehadiran Tertinggi</span>
+            <strong id="kpiTopPlayer" class="kpi-value kpi-name">-</strong>
+            <span id="kpiTopPlayerSub" class="kpi-sub">Belum ada data</span>
           </div>
         </div>
 
@@ -309,7 +337,7 @@
         </div>
       </section>
 
-      <!-- Panel Kelola Skuad & Ganti PIN -->
+      <!-- Panel 4: Kelola Skuad & Keamanan PIN -->
       <section id="panel-skuad" class="panel">
         <div class="page-header">
           <div>
@@ -365,29 +393,28 @@
           <!-- Form Ubah PIN Keamanan -->
           <div class="card glass-panel">
             <div class="card-head-row">
-              <h3 class="card-title">Ubah PIN Panitia</h3>
-              <span class="meta-muted">PIN Bawaan: 1234</span>
+              <h3 class="card-title">Ubah PIN Keamanan</h3>
             </div>
-
-            <div class="pin-change-fields">
+            <p class="meta-muted" style="margin: 0 0 14px; line-height: 1.5;">
+              PIN bawaan sistem adalah <strong>1234</strong>. Ubah di sini tanpa perlu membuka Google Apps Script.
+            </p>
+            <div class="skuad-form-grid">
               <div class="field-group">
                 <label for="oldPinChangeInput">PIN Saat Ini</label>
-                <input id="oldPinChangeInput" type="password" placeholder="Masukkan PIN lama..." maxlength="12" />
+                <input id="oldPinChangeInput" type="password" placeholder="PIN lama..." maxlength="12" />
               </div>
               <div class="field-group">
                 <label for="newPinChangeInput">PIN Baru</label>
-                <input id="newPinChangeInput" type="password" placeholder="Masukkan PIN baru..." maxlength="12" />
+                <input id="newPinChangeInput" type="password" placeholder="Minimal 4 digit..." maxlength="12" />
               </div>
             </div>
-
             <div class="skuad-form-actions">
-              <span id="pinChangeFeedback" class="meta-muted">Tersimpan langsung ke database.</span>
-              <button id="btnChangePin" type="button" class="btn btn-ghost">Perbarui PIN</button>
+              <span id="pinChangeFeedback" class="meta-muted">Tersimpan langsung di database.</span>
+              <button id="btnChangePin" type="button" class="btn btn-primary">Simpan PIN Baru</button>
             </div>
           </div>
         </div>
 
-        <!-- Tabel Daftar Seluruh Skuad -->
         <div class="card glass-panel">
           <div class="filter-bar">
             <div class="field-group grow">

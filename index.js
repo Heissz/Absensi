@@ -173,15 +173,45 @@ sessionInput.addEventListener("input", () => {
   });
 });
 
+// Animasi Kapsul Meluncur (Sliding Pill) pada Navigasi Menu Utama
+const mainNavList = document.getElementById("mainNavList");
+const navActivePill = document.getElementById("navActivePill");
+
+function updateNavIndicator(activeBtn) {
+  if (!mainNavList || !navActivePill || !activeBtn) return;
+  mainNavList.classList.add("pill-ready");
+  navActivePill.style.width = `${activeBtn.offsetWidth}px`;
+  navActivePill.style.height = `${activeBtn.offsetHeight}px`;
+  navActivePill.style.transform = `translate3d(${activeBtn.offsetLeft}px, ${activeBtn.offsetTop}px, 0)`;
+  navActivePill.style.opacity = "1";
+}
+
 // Navigasi Panel Sidebar
-document.querySelectorAll(".nav-btn").forEach((btn) => {
+const navButtons = Array.from(document.querySelectorAll(".nav-btn"));
+
+navButtons.forEach((btn, nextIdx) => {
   btn.addEventListener("click", () => {
-    document.querySelectorAll(".nav-btn").forEach((b) => b.classList.remove("active"));
-    document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+    if (btn.classList.contains("active")) return;
+
+    const prevActiveBtn = document.querySelector(".nav-btn.active");
+    const prevIdx = navButtons.indexOf(prevActiveBtn);
+    const isBackward = prevIdx !== -1 && nextIdx < prevIdx;
+
+    navButtons.forEach((b) => b.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach((p) => {
+      p.classList.remove("active", "slide-forward", "slide-backward");
+    });
 
     btn.classList.add("active");
+    updateNavIndicator(btn);
+    btn.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+
     const targetId = btn.getAttribute("data-target");
-    document.getElementById(targetId).classList.add("active");
+    const targetPanel = document.getElementById(targetId);
+    if (targetPanel) {
+      void targetPanel.offsetWidth;
+      targetPanel.classList.add("active", isBackward ? "slide-backward" : "slide-forward");
+    }
 
     if (targetId === "panel-history") {
       loadRiwayatAbsensi();
@@ -191,6 +221,17 @@ document.querySelectorAll(".nav-btn").forEach((btn) => {
       loadAllPlayersData(true);
     }
   });
+});
+
+window.addEventListener("resize", () => {
+  const activeNav = document.querySelector(".nav-btn.active");
+  if (activeNav) updateNavIndicator(activeNav);
+});
+
+// Posisikan indikator awal saat halaman dimuat
+requestAnimationFrame(() => {
+  const initialActiveNav = document.querySelector(".nav-btn.active");
+  if (initialActiveNav) updateNavIndicator(initialActiveNav);
 });
 
 function setStatus(message, type = "") {
@@ -884,15 +925,15 @@ function renderHistoryTable() {
   }
 
   tbody.innerHTML = filtered.map((r) => {
-    const curStatus = r.status_kehadiran || "Hadir";
+    const curSt = String(r.status_kehadiran || "Hadir").trim();
     return `
       <tr>
         <td>${escapeHtml(r.tanggal)}</td>
         <td>${escapeHtml(r.jam)}</td>
         <td>${escapeHtml(r.sesi)}</td>
         <td><strong>${escapeHtml(r.player_name)}</strong></td>
-        <td>${renderStatusBadge(curStatus)}</td>
-        <td>${escapeHtml(r.keterangan || "-")}</td>
+        <td>${renderStatusBadge(curSt)}</td>
+        <td class="meta-muted">${escapeHtml(r.keterangan || "-")}</td>
         <td class="meta-muted">${escapeHtml(r.qr_token)}</td>
         <td>
           <select
@@ -901,12 +942,12 @@ function renderHistoryTable() {
             data-token="${escapeHtml(r.qr_token)}"
             data-date="${escapeHtml(r.tanggal)}"
             data-session="${escapeHtml(r.sesi)}"
-            data-prev="${escapeHtml(curStatus)}"
+            data-prev="${escapeHtml(curSt)}"
           >
-            <option value="Hadir" ${curStatus === "Hadir" ? "selected" : ""}>Hadir</option>
-            <option value="Izin" ${curStatus === "Izin" ? "selected" : ""}>Izin</option>
-            <option value="Sakit" ${curStatus === "Sakit" ? "selected" : ""}>Sakit</option>
-            <option value="Alfa" ${curStatus === "Alfa" ? "selected" : ""}>Alfa</option>
+            <option value="Hadir" ${curSt === "Hadir" ? "selected" : ""}>Hadir</option>
+            <option value="Izin" ${curSt === "Izin" ? "selected" : ""}>Izin</option>
+            <option value="Sakit" ${curSt === "Sakit" ? "selected" : ""}>Sakit</option>
+            <option value="Alfa" ${curSt === "Alfa" ? "selected" : ""}>Alfa</option>
           </select>
         </td>
       </tr>
@@ -914,21 +955,21 @@ function renderHistoryTable() {
   }).join("");
 }
 
-// Listener Ubah Status Kehadiran Langsung di Tabel Riwayat
+// Listener Perubahan Status pada Tabel Riwayat Absensi
 document.getElementById("historyTableBody").addEventListener("change", async (e) => {
-  const selectEl = e.target.closest(".history-status-select");
-  if (!selectEl) return;
+  const sel = e.target.closest(".history-status-select");
+  if (!sel) return;
 
   const historyStatus = document.getElementById("historyStatus");
-  const targetToken = selectEl.getAttribute("data-token");
-  const targetDate = selectEl.getAttribute("data-date");
-  const targetSession = selectEl.getAttribute("data-session");
-  const prevStatus = selectEl.getAttribute("data-prev");
-  const newStatus = selectEl.value;
+  const newStatus = sel.value;
+  const prevStatus = sel.getAttribute("data-prev");
+  const token = sel.getAttribute("data-token");
+  const tanggal = sel.getAttribute("data-date");
+  const sesi = sel.getAttribute("data-session");
   const pin = (pinInput.value || "").trim();
 
-  selectEl.disabled = true;
-  historyStatus.textContent = `Memperbarui status ${targetToken} menjadi ${newStatus}...`;
+  sel.disabled = true;
+  historyStatus.textContent = `Memperbarui status ${token} menjadi ${newStatus}...`;
 
   try {
     const res = await fetch(APPS_SCRIPT_URL, {
@@ -936,9 +977,9 @@ document.getElementById("historyTableBody").addEventListener("change", async (e)
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({
         action: "update_log_status",
-        qr_token: targetToken,
-        tanggal: targetDate,
-        session_id: targetSession,
+        qr_token: token,
+        tanggal: tanggal,
+        session_id: sesi,
         new_status: newStatus,
         keterangan: `Diubah manual ke ${newStatus}`,
         pin: pin
@@ -950,33 +991,33 @@ document.getElementById("historyTableBody").addEventListener("change", async (e)
       await loadRiwayatAbsensi();
     } else {
       historyStatus.textContent = result.message || "Gagal memperbarui status.";
-      selectEl.value = prevStatus;
-      selectEl.disabled = false;
+      sel.value = prevStatus;
+      sel.disabled = false;
     }
   } catch (err) {
     historyStatus.textContent = "Error koneksi: " + err.message;
-    selectEl.value = prevStatus;
-    selectEl.disabled = false;
+    sel.value = prevStatus;
+    sel.disabled = false;
   }
 });
 
 async function loadRiwayatAbsensi() {
   const historyStatus = document.getElementById("historyStatus");
   const tbody = document.getElementById("historyTableBody");
-  const filterDate = document.getElementById("filterDate").value.trim();
-  const filterSession = document.getElementById("filterSession").value.trim();
+  const dateVal = document.getElementById("filterDate").value.trim();
+  const sessionVal = document.getElementById("filterSession").value.trim();
 
-  historyStatus.textContent = "Memuat riwayat absensi...";
+  historyStatus.textContent = "Memuat riwayat dari database...";
   tbody.innerHTML = "";
 
   try {
     const params = new URLSearchParams({ action: "history" });
-    if (filterDate) params.set("date", filterDate);
-    if (filterSession) params.set("session", filterSession);
+    if (dateVal) params.set("date", dateVal);
+    if (sessionVal) params.set("session", sessionVal);
 
     const res = await fetch(`${APPS_SCRIPT_URL}?${params.toString()}`);
     const result = await res.json();
-    if (!result.ok) throw new Error(result.message || "Gagal memuat riwayat absensi");
+    if (!result.ok) throw new Error(result.message || "Gagal mengambil riwayat");
 
     cachedHistoryRows = result.data || [];
     renderHistoryTable();
@@ -985,10 +1026,46 @@ async function loadRiwayatAbsensi() {
   }
 }
 
-// Render Tabel Ringkasan Kehadiran (Hadir, Izin, Sakit, Alfa, Rasio)
+// Render Tabel Ringkasan Kehadiran (Hadir, Izin, Sakit, Alfa, Rasio) & KPI Cards
 function renderRekapTable() {
   const tbody = document.getElementById("rekapTableBody");
   const keyword = (document.getElementById("searchRekapInput").value || "").trim().toLowerCase();
+
+  // Hitung KPI dari seluruh skuad aktif
+  const activeRows = cachedRekapRows.filter(
+    (r) => String(r.status || "active").trim().toLowerCase() === "active"
+  );
+  const kpiRows = activeRows.length > 0 ? activeRows : cachedRekapRows;
+
+  const kpiActiveSquad = document.getElementById("kpiActiveSquad");
+  const kpiAvgAttendance = document.getElementById("kpiAvgAttendance");
+  const kpiTopPlayer = document.getElementById("kpiTopPlayer");
+  const kpiTopPlayerSub = document.getElementById("kpiTopPlayerSub");
+
+  if (kpiActiveSquad) kpiActiveSquad.textContent = String(kpiRows.length);
+
+  if (kpiRows.length > 0) {
+    const avgPct = Math.round(
+      kpiRows.reduce((sum, r) => sum + (Number(r.persentase) || 0), 0) / kpiRows.length
+    );
+    if (kpiAvgAttendance) kpiAvgAttendance.textContent = `${avgPct}%`;
+
+    const sortedTop = [...kpiRows].sort(
+      (a, b) => (Number(b.hadir) || 0) - (Number(a.hadir) || 0) || (Number(b.persentase) || 0) - (Number(a.persentase) || 0)
+    );
+    const best = sortedTop[0];
+    if (best && (Number(best.hadir) || 0) > 0) {
+      if (kpiTopPlayer) kpiTopPlayer.textContent = best.player_name;
+      if (kpiTopPlayerSub) kpiTopPlayerSub.textContent = `${best.hadir}x Hadir (${best.persentase}%)`;
+    } else {
+      if (kpiTopPlayer) kpiTopPlayer.textContent = "-";
+      if (kpiTopPlayerSub) kpiTopPlayerSub.textContent = "Belum ada catatan hadir";
+    }
+  } else {
+    if (kpiAvgAttendance) kpiAvgAttendance.textContent = "0%";
+    if (kpiTopPlayer) kpiTopPlayer.textContent = "-";
+    if (kpiTopPlayerSub) kpiTopPlayerSub.textContent = "Belum ada data";
+  }
 
   const filtered = cachedRekapRows.filter((r) => {
     if (!keyword) return true;
@@ -1024,6 +1101,7 @@ function renderRekapTable() {
 
 async function loadRekapKehadiran() {
   const summaryEl = document.getElementById("rekapSummary");
+  const kpiTotalSessions = document.getElementById("kpiTotalSessions");
   const tbody = document.getElementById("rekapTableBody");
   const monthVal = document.getElementById("rekapMonthInput").value.trim();
 
@@ -1039,11 +1117,77 @@ async function loadRekapKehadiran() {
     if (!result.ok) throw new Error(result.message || "Gagal memuat ringkasan");
 
     cachedRekapRows = result.data || [];
-    summaryEl.textContent = `Total sesi: ${result.total_sessions || 0}`;
+    const totalSesi = result.total_sessions || 0;
+    summaryEl.textContent = `Total sesi: ${totalSesi}`;
+    if (kpiTotalSessions) kpiTotalSessions.textContent = String(totalSesi);
     renderRekapTable();
   } catch (err) {
     summaryEl.textContent = "Error: " + err.message;
   }
+}
+
+// Salin Laporan Riwayat Terfilter ke Format WhatsApp
+const btnCopyWaHistory = document.getElementById("btnCopyWaHistory");
+if (btnCopyWaHistory) {
+  btnCopyWaHistory.addEventListener("click", async () => {
+    const historyStatus = document.getElementById("historyStatus");
+    const keyword = (document.getElementById("searchHistoryInput").value || "").trim().toLowerCase();
+    const statusFilter = (document.getElementById("filterAttStatus").value || "").trim().toLowerCase();
+
+    const rowsToCopy = cachedHistoryRows.filter((r) => {
+      const rowStatus = String(r.status_kehadiran || "Hadir").toLowerCase();
+      if (statusFilter && rowStatus !== statusFilter) return false;
+      if (!keyword) return true;
+      return [r.player_name, r.keterangan, r.qr_token, r.sesi, rowStatus]
+        .some((f) => String(f || "").toLowerCase().includes(keyword));
+    });
+
+    if (rowsToCopy.length === 0) {
+      historyStatus.textContent = "Tidak ada data riwayat untuk disalin ke WhatsApp.";
+      return;
+    }
+
+    const groups = { Hadir: [], Izin: [], Sakit: [], Alfa: [] };
+    rowsToCopy.forEach((r) => {
+      const st = String(r.status_kehadiran || "Hadir").trim();
+      const key = groups[st] ? st : "Hadir";
+      const notePart = r.keterangan && r.keterangan !== "Scan QR" ? ` _(${r.keterangan})_` : "";
+      groups[key].push(`• ${r.player_name}${notePart}`);
+    });
+
+    const dateLabel = document.getElementById("filterDate").value.trim() || rowsToCopy[0].tanggal || "-";
+    const sessionLabel = document.getElementById("filterSession").value.trim() || rowsToCopy[0].sesi || "Semua Sesi";
+
+    const lines = [
+      `*LAPORAN PRESENSI FUTSAL ITDA*`,
+      `Tanggal: ${dateLabel}`,
+      `Sesi: ${sessionLabel}`,
+      ``
+    ];
+
+    ["Hadir", "Izin", "Sakit", "Alfa"].forEach((st) => {
+      if (groups[st].length > 0) {
+        lines.push(`*${st.toUpperCase()} (${groups[st].length}):*`);
+        lines.push(...groups[st]);
+        lines.push(``);
+      }
+    });
+
+    lines.push(`Total Tercatat: ${rowsToCopy.length} pemain`);
+    const waText = lines.join("\n").trim();
+
+    try {
+      await navigator.clipboard.writeText(waText);
+      const origText = btnCopyWaHistory.textContent;
+      btnCopyWaHistory.textContent = "Tersalin ke Clipboard!";
+      historyStatus.textContent = "Rekap WhatsApp berhasil disalin—siap ditempel ke grup tim.";
+      setTimeout(() => {
+        btnCopyWaHistory.textContent = origText;
+      }, 2200);
+    } catch (err) {
+      historyStatus.textContent = "Gagal menyalin otomatis. Pastikan izin clipboard browser aktif.";
+    }
+  });
 }
 
 // Export ke CSV
