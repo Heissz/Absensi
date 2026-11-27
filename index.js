@@ -902,7 +902,6 @@ function renderHistoryTable() {
             data-date="${escapeHtml(r.tanggal)}"
             data-session="${escapeHtml(r.sesi)}"
             data-prev="${escapeHtml(curStatus)}"
-            style="padding:5px 10px; font-size:0.78rem;"
           >
             <option value="Hadir" ${curStatus === "Hadir" ? "selected" : ""}>Hadir</option>
             <option value="Izin" ${curStatus === "Izin" ? "selected" : ""}>Izin</option>
