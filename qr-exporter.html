@@ -4,458 +4,61 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Export QR Code Pemain — Futsal ITDA</title>
+  <!-- Google Fonts: Plus Jakarta Sans & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
+  <!-- Pustaka JSZip untuk Unduh Massal -->
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-  <style>
-    :root {
-      --bg-page: #fcfcfd;
-      --bg-surface: #ffffff;
-      --bg-subtle: #f8fafc;
-      --text-main: #0f172a;
-      --text-muted: #64748b;
-      --border-hairline: #e2e8f0;
-      --accent: #0f766e;
-      --accent-soft: #f0fdfa;
-      --accent-border: #99f6e4;
-    }
-
-    * {
-      box-sizing: border-box;
-      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-
-    body {
-      margin: 0;
-      background: var(--bg-page);
-      color: var(--text-main);
-      padding: 28px 20px;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    .container {
-      max-width: 960px;
-      margin: 0 auto;
-    }
-
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 16px;
-      flex-wrap: wrap;
-      margin-bottom: 20px;
-    }
-
-    .header h1 {
-      margin: 0 0 4px;
-      font-size: 1.4rem;
-      letter-spacing: -0.02em;
-    }
-
-    .header p {
-      margin: 0;
-      color: var(--text-muted);
-      font-size: 0.9rem;
-    }
-
-    .back-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      text-decoration: none;
-      padding: 9px 14px;
-      border-radius: 8px;
-      border: 1px solid var(--border-hairline);
-      background: var(--bg-surface);
-      color: var(--text-main);
-      font-size: 0.86rem;
-      font-weight: 600;
-      transition: all 0.15s ease;
-    }
-
-    .back-link:hover {
-      background: var(--bg-subtle);
-      border-color: #cbd5e1;
-    }
-
-    .card {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-hairline);
-      border-radius: 14px;
-      padding: 20px;
-      margin-bottom: 18px;
-    }
-
-    .toolbar {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-
-    .check-label {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.85rem;
-      color: var(--text-main);
-      cursor: pointer;
-    }
-
-    textarea {
-      width: 100%;
-      min-height: 105px;
-      padding: 12px;
-      margin-top: 14px;
-      border-radius: 10px;
-      border: 1px solid var(--border-hairline);
-      font-size: 0.84rem;
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-      color: var(--text-main);
-      background: var(--bg-subtle);
-      resize: vertical;
-      outline: none;
-    }
-
-    textarea:focus {
-      border-color: var(--accent);
-    }
-
-    .btn {
-      padding: 10px 15px;
-      border-radius: 8px;
-      border: 1px solid transparent;
-      font-size: 0.86rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-
-    .btn-primary {
-      background: var(--accent);
-      color: #fff;
-    }
-
-    .btn-primary:hover:not(:disabled) {
-      background: #115e59;
-    }
-
-    .btn-ghost {
-      background: var(--bg-surface);
-      color: var(--text-main);
-      border-color: var(--border-hairline);
-    }
-
-    .btn-ghost:hover:not(:disabled) {
-      background: var(--bg-subtle);
-    }
-
-    .btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .meta {
-      font-size: 0.84rem;
-      color: var(--text-muted);
-      margin-left: auto;
-    }
-
-    .preview-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-bottom: 14px;
-    }
-
-    .preview-title {
-      margin: 0;
-      font-size: 1rem;
-      font-weight: 700;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-      gap: 14px;
-    }
-
-    .qr-card {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-hairline);
-      border-radius: 12px;
-      padding: 14px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-    }
-
-    .qr-card canvas {
-      width: 160px;
-      height: 160px;
-      border-radius: 8px;
-    }
-
-    .player-no {
-      margin-top: 10px;
-      font-size: 0.76rem;
-      font-weight: 700;
-      color: var(--text-muted);
-      letter-spacing: 0.04em;
-    }
-
-    .player-name {
-      margin-top: 2px;
-      font-weight: 700;
-      font-size: 0.94rem;
-      color: var(--text-main);
-    }
-
-    .player-pos {
-      margin-top: 5px;
-      font-size: 0.76rem;
-      font-weight: 600;
-      color: var(--accent);
-      background: var(--accent-soft);
-      border: 1px solid var(--accent-border);
-      padding: 2px 9px;
-      border-radius: 999px;
-    }
-
-    .qr-card .btn {
-      margin-top: 12px;
-      width: 100%;
-      padding: 8px 10px;
-      font-size: 0.82rem;
-    }
-  </style>
+  <!-- Stylesheet Terpisah -->
+  <link rel="stylesheet" href="qr-exporter.css" />
 </head>
 <body>
   <div class="container">
-    <div class="header">
+    <header class="header">
       <div>
+        <div class="header-kicker">Generator Kartu</div>
         <h1>Export QR Code Pemain</h1>
-        <p>Ambil data dari database atau isi teks, lalu klik Tampilkan Preview.</p>
+        <p>Tarik data dari spreadsheet atau tempel daftar pemain untuk mengunduh kartu QR.</p>
       </div>
-      <a href="index.html" class="back-link">← Kembali ke Presensi</a>
-    </div>
+      <a href="index.html" class="back-link">
+        <span>←</span>
+        <span>Kembali ke Presensi</span>
+      </a>
+    </header>
 
     <div class="card">
       <div class="toolbar">
         <button id="btnFetchDb" type="button" class="btn btn-primary">Ambil dari Database</button>
         <button id="btnGenerate" type="button" class="btn btn-ghost">Tampilkan Preview</button>
+        <button id="btnClearInput" type="button" class="btn btn-ghost">Bersihkan</button>
         <label class="check-label">
           <input id="onlyActiveCheck" type="checkbox" checked />
-          Hanya status <code>active</code>
+          <span>Hanya status <code>active</code></span>
         </label>
-        <span id="infoCount" class="meta">Belum dimuat — klik "Ambil dari Database" atau "Tampilkan Preview".</span>
+        <span id="infoCount" class="meta">Siap memuat data pemain.</span>
       </div>
 
-      <textarea id="rawInput" placeholder="Format per baris: token_qr | nama | posisi"></textarea>
+      <textarea id="rawInput" placeholder="Format per baris: token_qr | nama | posisi&#10;Contoh: PLY-ITDA-001 | Rizky Pratama | Coach"></textarea>
     </div>
 
     <div class="preview-header">
-      <h2 class="preview-title">Preview Kartu QR</h2>
-      <button id="btnDownloadZip" type="button" class="btn btn-primary">Unduh Semua (.ZIP)</button>
+      <div class="preview-left">
+        <h2 class="preview-title">Preview Kartu QR</h2>
+        <span id="cardCounterBadge" class="count-badge">0 Kartu</span>
+      </div>
+      <div class="preview-actions">
+        <input id="searchCardInput" class="search-card-input" type="search" placeholder="Cari kartu pemain..." />
+        <button id="btnDownloadZip" type="button" class="btn btn-primary" disabled>Unduh Semua (.ZIP)</button>
+      </div>
     </div>
 
-    <div id="qrGrid" class="grid"></div>
+    <div id="qrGrid" class="grid">
+      <div class="empty-grid-state">Belum ada preview kartu. Klik <strong>Ambil dari Database</strong> lalu <strong>Tampilkan Preview</strong>.</div>
+    </div>
   </div>
 
-  <script>
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyjKKp4maxqy3T4unEJ7plI4vvW09h_z0sqRSy6iIbCbVTJgDZkiX8Zy42Ry1M7g3-L/exec";
-
-    const rawInput = document.getElementById("rawInput");
-    const qrGrid = document.getElementById("qrGrid");
-    const infoCount = document.getElementById("infoCount");
-    const btnFetchDb = document.getElementById("btnFetchDb");
-    const btnGenerate = document.getElementById("btnGenerate");
-    const btnDownloadZip = document.getElementById("btnDownloadZip");
-    const onlyActiveCheck = document.getElementById("onlyActiveCheck");
-
-    let dbPlayers = [];
-    let generatedItems = [];
-
-    function parseLines(text) {
-      return text
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter(Boolean)
-        .map((line, idx) => {
-          const parts = line.split(/\t|\||,/).map((p) => p.trim());
-          return {
-            no: idx + 1,
-            token: parts[0] || "",
-            name: parts[1] || parts[0] || "",
-            position: parts[2] || ""
-          };
-        })
-        .filter((item) => item.token);
-    }
-
-    function sanitizeFilename(str) {
-      return String(str || "qr")
-        .trim()
-        .replace(/[^a-zA-Z0-9_-]+/g, "_")
-        .replace(/^_+|_+$/g, "") || "qr";
-    }
-
-    function loadQrImage(tokenText) {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.onload = () => resolve(img);
-        img.onerror = () => reject(new Error("Gagal memuat gambar QR"));
-        img.src = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=6&data=" + encodeURIComponent(tokenText);
-      });
-    }
-
-    // Gambar PNG hanya berisi QR saja (tanpa No/Nama/Posisi di dalam gambar)
-    async function renderExportCanvas(item) {
-      const canvas = document.createElement("canvas");
-      canvas.width = 340;
-      canvas.height = 340;
-      const ctx = canvas.getContext("2d");
-
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      try {
-        const qrImg = await loadQrImage(item.token);
-        ctx.drawImage(qrImg, 20, 20, 300, 300);
-      } catch (e) {
-        ctx.fillStyle = "#fef2f2";
-        ctx.fillRect(20, 20, 300, 300);
-        ctx.fillStyle = "#b91c1c";
-        ctx.font = "15px system-ui, sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText("QR gagal dimuat", 170, 175);
-      }
-
-      return canvas;
-    }
-
-    function downloadDataUrl(dataUrl, filename) {
-      const a = document.createElement("a");
-      a.href = dataUrl;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    }
-
-    async function buildCardsFromItems(items) {
-      qrGrid.innerHTML = "";
-      generatedItems = [];
-
-      if (!items || items.length === 0) {
-        infoCount.textContent = "0 kartu";
-        return;
-      }
-
-      infoCount.textContent = `Membuat ${items.length} preview...`;
-
-      for (const item of items) {
-        const card = document.createElement("div");
-        card.className = "qr-card";
-
-        const canvas = await renderExportCanvas(item);
-        const filename = `${String(item.no).padStart(2, "0")}_${sanitizeFilename(item.name)}.png`;
-        generatedItems.push({ ...item, canvas, filename });
-
-        const noEl = document.createElement("div");
-        noEl.className = "player-no";
-        noEl.textContent = `No. ${item.no}`;
-
-        const nameEl = document.createElement("div");
-        nameEl.className = "player-name";
-        nameEl.textContent = item.name;
-
-        const btnSingle = document.createElement("button");
-        btnSingle.type = "button";
-        btnSingle.className = "btn btn-ghost";
-        btnSingle.textContent = "Unduh";
-        btnSingle.addEventListener("click", () => {
-          downloadDataUrl(canvas.toDataURL("image/png"), filename);
-        });
-
-        card.appendChild(canvas);
-        card.appendChild(noEl);
-        card.appendChild(nameEl);
-
-        if (item.position) {
-          const posEl = document.createElement("div");
-          posEl.className = "player-pos";
-          posEl.textContent = item.position;
-          card.appendChild(posEl);
-        }
-
-        card.appendChild(btnSingle);
-        qrGrid.appendChild(card);
-      }
-
-      infoCount.textContent = `${generatedItems.length} kartu siap`;
-    }
-
-    function filterDbPlayers() {
-      const filterActive = onlyActiveCheck.checked;
-      return dbPlayers
-        .filter((p) => p.qr_token)
-        .filter((p) => !filterActive || String(p.status || "").trim().toLowerCase() === "active")
-        .map((p, idx) => ({
-          no: idx + 1,
-          token: String(p.qr_token || "").trim(),
-          name: String(p.player_name || "").trim(),
-          position: String(p.position || "").trim()
-        }));
-    }
-
-    async function fetchPlayersFromDb() {
-      btnFetchDb.disabled = true;
-      infoCount.textContent = "Mengambil data dari database...";
-      try {
-        const res = await fetch(`${APPS_SCRIPT_URL}?action=players`);
-        const result = await res.json();
-        if (!result.ok) throw new Error(result.message || "Gagal mengambil data pemain");
-
-        dbPlayers = Array.isArray(result.data) ? result.data : [];
-        const filtered = filterDbPlayers();
-        rawInput.value = filtered
-          .map((x) => `${x.token} | ${x.name} | ${x.position}`)
-          .join("\n");
-        infoCount.textContent = `${filtered.length} data dimuat — klik "Tampilkan Preview".`;
-      } catch (err) {
-        infoCount.textContent = "Gagal ambil DB: " + err.message;
-      } finally {
-        btnFetchDb.disabled = false;
-      }
-    }
-
-    async function exportAllAsZip() {
-      if (generatedItems.length === 0) return;
-
-      if (typeof JSZip === "undefined") {
-        alert("Pustaka JSZip gagal dimuat. Coba refresh halaman.");
-        return;
-      }
-
-      const zip = new JSZip();
-      for (const entry of generatedItems) {
-        const base64 = entry.canvas.toDataURL("image/png").split(",")[1];
-        zip.file(entry.filename, base64, { base64: true });
-      }
-
-      const blob = await zip.generateAsync({ type: "blob" });
-      const url = URL.createObjectURL(blob);
-      downloadDataUrl(url, "qr_pemain_futsal_itda.zip");
-      setTimeout(() => URL.revokeObjectURL(url), 2000);
-    }
-
-    btnFetchDb.addEventListener("click", fetchPlayersFromDb);
-    btnGenerate.addEventListener("click", () => buildCardsFromItems(parseLines(rawInput.value)));
-    btnDownloadZip.addEventListener("click", exportAllAsZip);
-  </script>
+  <!-- Script Logika Export QR -->
+  <script src="qr-exporter.js"></script>
 </body>
 </html>

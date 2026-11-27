@@ -4,533 +4,147 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Futsal ITDA — Presensi Skuad</title>
+  <!-- Google Fonts: Plus Jakarta Sans & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
+  <!-- Pustaka Pemindai QR Code -->
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-  <style>
-    :root {
-      --bg-page: #fcfcfd;
-      --bg-surface: #ffffff;
-      --bg-subtle: #f8fafc;
-      --text-main: #0f172a;
-      --text-muted: #64748b;
-      --border-hairline: #e2e8f0;
-      --accent: #0f766e;
-      --accent-soft: #f0fdfa;
-      --accent-border: #99f6e4;
-      --ok-bg: #f0fdf4;
-      --ok-text: #15803d;
-      --ok-border: #bbf7d0;
-      --err-bg: #fef2f2;
-      --err-text: #b91c1c;
-      --err-border: #fecaca;
-      --wait-bg: #fffbeb;
-      --wait-text: #b45309;
-      --wait-border: #fde68a;
-      --radius-lg: 16px;
-      --radius-md: 10px;
-      --radius-sm: 8px;
-    }
-
-    * {
-      box-sizing: border-box;
-      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-
-    body {
-      margin: 0;
-      background: var(--bg-page);
-      color: var(--text-main);
-      min-height: 100vh;
-      display: flex;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    .sidebar {
-      width: 240px;
-      background: var(--bg-surface);
-      border-right: 1px solid var(--border-hairline);
-      padding: 28px 18px;
-      display: flex;
-      flex-direction: column;
-      flex-shrink: 0;
-    }
-
-    .brand-wrap {
-      padding: 0 10px 24px;
-      border-bottom: 1px solid var(--border-hairline);
-      margin-bottom: 22px;
-    }
-
-    .brand-kicker {
-      font-size: 0.7rem;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--accent);
-      margin-bottom: 4px;
-    }
-
-    .brand-title {
-      font-size: 1.05rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      color: var(--text-main);
-      margin: 0;
-    }
-
-    .nav-group-label {
-      font-size: 0.7rem;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      padding: 0 10px;
-      margin-bottom: 10px;
-    }
-
-    .nav-btn {
-      width: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: transparent;
-      color: var(--text-muted);
-      border: 1px solid transparent;
-      padding: 10px 12px;
-      border-radius: var(--radius-sm);
-      margin-bottom: 6px;
-      cursor: pointer;
-      font-size: 0.9rem;
-      font-weight: 500;
-      text-align: left;
-      transition: all 0.16s ease;
-    }
-
-    .nav-btn:hover {
-      background: var(--bg-subtle);
-      color: var(--text-main);
-    }
-
-    .nav-btn.active {
-      background: var(--accent-soft);
-      color: var(--accent);
-      border-color: var(--accent-border);
-      font-weight: 600;
-    }
-
-    .nav-link-external {
-      width: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      text-decoration: none;
-      background: var(--bg-surface);
-      color: var(--text-main);
-      border: 1px solid var(--border-hairline);
-      padding: 10px 12px;
-      border-radius: var(--radius-sm);
-      margin-top: 8px;
-      font-size: 0.86rem;
-      font-weight: 600;
-      transition: all 0.16s ease;
-    }
-
-    .nav-link-external:hover {
-      background: var(--bg-subtle);
-      border-color: #cbd5e1;
-    }
-
-    .sidebar-note {
-      margin-top: auto;
-      padding-top: 18px;
-      border-top: 1px solid var(--border-hairline);
-      font-size: 0.78rem;
-      line-height: 1.5;
-      color: var(--text-muted);
-      padding-left: 10px;
-      padding-right: 10px;
-    }
-
-    .main {
-      flex: 1;
-      padding: 32px 36px;
-      max-width: 960px;
-      width: 100%;
-    }
-
-    .panel {
-      display: none;
-    }
-
-    .panel.active {
-      display: block;
-      animation: fadeIn 0.2s ease;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(4px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .page-header {
-      margin-bottom: 22px;
-    }
-
-    .page-header h1 {
-      font-size: 1.45rem;
-      font-weight: 700;
-      letter-spacing: -0.025em;
-      margin: 0 0 6px;
-      color: var(--text-main);
-    }
-
-    .page-header p {
-      margin: 0;
-      font-size: 0.9rem;
-      color: var(--text-muted);
-    }
-
-    .card {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-hairline);
-      border-radius: var(--radius-lg);
-      padding: 24px;
-      margin-bottom: 18px;
-    }
-
-    .card-title {
-      font-size: 0.92rem;
-      font-weight: 600;
-      color: var(--text-main);
-      margin: 0 0 14px;
-      letter-spacing: -0.01em;
-    }
-
-    .form-row {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      flex-wrap: wrap;
-      margin-bottom: 18px;
-    }
-
-    label {
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--text-main);
-    }
-
-    input[type="text"],
-    input[type="date"],
-    select {
-      padding: 10px 12px;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--border-hairline);
-      background: var(--bg-surface);
-      color: var(--text-main);
-      font-size: 0.88rem;
-      outline: none;
-      transition: border-color 0.15s ease;
-    }
-
-    input[type="text"]:focus,
-    input[type="date"]:focus,
-    select:focus {
-      border-color: var(--accent);
-    }
-
-    .session-input {
-      flex: 1;
-      min-width: 200px;
-    }
-
-    .scanner-frame {
-      max-width: 460px;
-    }
-
-    #reader {
-      width: 100%;
-      border-radius: var(--radius-md);
-      overflow: hidden;
-      background: #f8fafc;
-      border: 1px solid var(--border-hairline);
-      min-height: 260px;
-    }
-
-    .controls {
-      display: flex;
-      gap: 8px;
-      margin-top: 12px;
-      flex-wrap: wrap;
-    }
-
-    .cam-select {
-      flex: 1;
-      min-width: 170px;
-    }
-
-    .btn {
-      padding: 10px 16px;
-      border-radius: var(--radius-sm);
-      font-size: 0.88rem;
-      font-weight: 600;
-      cursor: pointer;
-      border: 1px solid transparent;
-      transition: all 0.15s ease;
-    }
-
-    .btn-primary {
-      background: var(--accent);
-      color: #ffffff;
-    }
-
-    .btn-primary:hover:not(:disabled) {
-      background: #115e59;
-    }
-
-    .btn-ghost {
-      background: var(--bg-surface);
-      color: var(--text-main);
-      border-color: var(--border-hairline);
-    }
-
-    .btn-ghost:hover:not(:disabled) {
-      background: var(--bg-subtle);
-    }
-
-    .btn:disabled {
-      opacity: 0.45;
-      cursor: not-allowed;
-    }
-
-    .status-box {
-      margin-top: 14px;
-      padding: 12px 14px;
-      border-radius: var(--radius-sm);
-      font-size: 0.88rem;
-      font-weight: 500;
-      background: var(--bg-subtle);
-      color: var(--text-muted);
-      border: 1px solid var(--border-hairline);
-      word-break: break-word;
-    }
-
-    .status-ok {
-      background: var(--ok-bg);
-      color: var(--ok-text);
-      border-color: var(--ok-border);
-    }
-
-    .status-err {
-      background: var(--err-bg);
-      color: var(--err-text);
-      border-color: var(--err-border);
-    }
-
-    .status-wait {
-      background: var(--wait-bg);
-      color: var(--wait-text);
-      border-color: var(--wait-border);
-    }
-
-    .mini-list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      max-height: 210px;
-      overflow-y: auto;
-    }
-
-    .mini-list li {
-      padding: 10px 2px;
-      border-bottom: 1px solid var(--border-hairline);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      font-size: 0.86rem;
-    }
-
-    .mini-list li:last-child {
-      border-bottom: none;
-    }
-
-    .meta-muted {
-      font-size: 0.82rem;
-      color: var(--text-muted);
-    }
-
-    .table-wrap {
-      overflow-x: auto;
-      border: 1px solid var(--border-hairline);
-      border-radius: var(--radius-md);
-      margin-top: 12px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.86rem;
-      background: var(--bg-surface);
-    }
-
-    th, td {
-      padding: 11px 14px;
-      text-align: left;
-      border-bottom: 1px solid var(--border-hairline);
-    }
-
-    th {
-      background: var(--bg-subtle);
-      color: var(--text-muted);
-      font-size: 0.76rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    tr:last-child td {
-      border-bottom: none;
-    }
-
-    tr:hover td {
-      background: #fafbfc;
-    }
-
-    .pos-pill {
-      display: inline-block;
-      padding: 3px 9px;
-      border-radius: 999px;
-      font-size: 0.76rem;
-      font-weight: 600;
-      background: var(--accent-soft);
-      color: var(--accent);
-      border: 1px solid var(--accent-border);
-    }
-
-    @media (max-width: 780px) {
-      body {
-        flex-direction: column;
-      }
-
-      .sidebar {
-        width: 100%;
-        border-right: none;
-        border-bottom: 1px solid var(--border-hairline);
-        padding: 16px;
-      }
-
-      .brand-wrap {
-        padding: 0 0 12px;
-        margin-bottom: 12px;
-      }
-
-      .nav-list {
-        display: flex;
-        gap: 6px;
-        overflow-x: auto;
-        align-items: center;
-      }
-
-      .nav-group-label,
-      .sidebar-note {
-        display: none;
-      }
-
-      .nav-btn,
-      .nav-link-external {
-        width: auto;
-        white-space: nowrap;
-        margin-bottom: 0;
-        margin-top: 0;
-      }
-
-      .main {
-        padding: 20px 16px;
-      }
-
-      .card {
-        padding: 18px;
-      }
-    }
-  </style>
+  <!-- Stylesheet Terpisah -->
+  <link rel="stylesheet" href="index.css" />
 </head>
 <body>
   <aside class="sidebar">
     <div class="brand-wrap">
-      <div class="brand-kicker">Presensi Digital</div>
+      <div class="brand-badge">
+        <span class="pulse-dot"></span>
+        <span>Presensi Digital</span>
+      </div>
       <h2 class="brand-title">Futsal ITDA</h2>
+      <p class="brand-sub">Sistem Kehadiran Skuad</p>
     </div>
 
-    <div class="nav-group-label">Navigasi</div>
-    <div class="nav-list">
-      <button class="nav-btn active" type="button" data-target="panel-scan">Pindai QR</button>
-      <button class="nav-btn" type="button" data-target="panel-history">Riwayat Absensi</button>
-      <button class="nav-btn" type="button" data-target="panel-rekap">Ringkasan</button>
+    <div class="nav-group-label">Menu Utama</div>
+    <nav class="nav-list">
+      <button class="nav-btn active" type="button" data-target="panel-scan">
+        <span class="nav-label">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg>
+          <span>Pindai QR</span>
+        </span>
+      </button>
+      <button class="nav-btn" type="button" data-target="panel-history">
+        <span class="nav-label">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>Riwayat Absensi</span>
+        </span>
+      </button>
+      <button class="nav-btn" type="button" data-target="panel-rekap">
+        <span class="nav-label">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          <span>Ringkasan</span>
+        </span>
+      </button>
       <a href="qr-exporter.html" class="nav-link-external">
-        <span>Export QR</span>
-        <span>↗</span>
+        <span class="nav-label">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><path d="M3 14h7v7H3z"/></svg>
+          <span>Export Kartu QR</span>
+        </span>
+        <span class="arrow-icon">↗</span>
       </a>
-    </div>
+    </nav>
 
     <div class="sidebar-note">
-      Satu QR berlaku satu kali per sesi. Data tersimpan langsung di Google Sheets.
+      <div class="note-title">Aturan Sesi</div>
+      Satu kode QR hanya berlaku satu kali pemindaian pada nama sesi yang sama.
     </div>
   </aside>
 
   <main class="main">
+    <!-- Panel Pemindaian QR -->
     <section id="panel-scan" class="panel active">
       <div class="page-header">
-        <h1>Pindai QR</h1>
-        <p>Arahkan kamera ke kartu QR pemain untuk mencatat kehadiran sesi aktif.</p>
+        <div>
+          <h1>Pindai QR Pemain</h1>
+          <p>Pilih atau ketik nama sesi, lalu arahkan kamera ke kartu QR anggota.</p>
+        </div>
+        <div id="cameraBadge" class="live-pill">
+          <span class="dot"></span>
+          <span id="cameraBadgeText">Kamera Siaga</span>
+        </div>
       </div>
 
-      <div class="card">
-        <div class="form-row">
-          <label for="sessionInput">Sesi Aktif</label>
-          <input
-            id="sessionInput"
-            class="session-input"
-            type="text"
-            value="Latihan Rutin"
-            placeholder="Contoh: Latihan Rutin / Uji Coba"
-          />
-        </div>
-
-        <div class="scanner-frame">
-          <div id="reader"></div>
-
-          <div class="controls">
-            <select id="cameraSelect" class="cam-select" aria-label="Pilih Kamera"></select>
-            <button id="btnStart" type="button" class="btn btn-primary">Mulai Kamera</button>
-            <button id="btnStop" type="button" class="btn btn-ghost" disabled>Stop</button>
+      <div class="scan-layout">
+        <div class="card">
+          <div class="session-block">
+            <div class="session-header">
+              <label for="sessionInput">Nama Sesi Aktif</label>
+              <div class="preset-chips">
+                <button type="button" class="chip-btn active" data-session="Latihan Rutin">Latihan Rutin</button>
+                <button type="button" class="chip-btn" data-session="Sparring">Sparring</button>
+                <button type="button" class="chip-btn" data-session="Turnamen">Turnamen</button>
+              </div>
+            </div>
+            <input
+              id="sessionInput"
+              class="session-input"
+              type="text"
+              value="Latihan Rutin"
+              placeholder="Ketik nama sesi lainnya..."
+            />
           </div>
 
-          <div id="statusBox" class="status-box">Siap memindai QR pemain...</div>
-        </div>
-      </div>
+          <div class="scanner-frame">
+            <div id="reader"></div>
 
-      <div class="card">
-        <h3 class="card-title">Masuk di Sesi Ini</h3>
-        <ul id="scanHistory" class="mini-list"></ul>
+            <div class="controls">
+              <select id="cameraSelect" class="cam-select" aria-label="Pilih Kamera"></select>
+              <button id="btnStart" type="button" class="btn btn-primary">Mulai Kamera</button>
+              <button id="btnStop" type="button" class="btn btn-ghost" disabled>Hentikan</button>
+            </div>
+
+            <div id="statusBox" class="status-box">Siap memindai QR pemain...</div>
+          </div>
+        </div>
+
+        <div class="card log-card">
+          <div class="card-head-row">
+            <h3 class="card-title">Log Sesi Ini</h3>
+            <span id="sessionScanCount" class="count-badge">0 Masuk</span>
+          </div>
+          <ul id="scanHistory" class="mini-list">
+            <li class="empty-placeholder">Belum ada pemindaian pada sesi ini.</li>
+          </ul>
+        </div>
       </div>
     </section>
 
+    <!-- Panel Riwayat Absensi -->
     <section id="panel-history" class="panel">
       <div class="page-header">
-        <h1>Riwayat Absensi</h1>
-        <p>Daftar log kehadiran harian per sesi dari spreadsheet.</p>
+        <div>
+          <h1>Riwayat Absensi</h1>
+          <p>Telusuri catatan kehadiran harian berdasarkan tanggal, sesi, atau nama pemain.</p>
+        </div>
       </div>
 
       <div class="card">
-        <div class="form-row" style="margin-bottom: 10px;">
-          <label for="filterDate">Tanggal</label>
-          <input id="filterDate" type="date" />
-          <label for="filterSession">Sesi</label>
-          <input id="filterSession" type="text" placeholder="Semua sesi" />
-          <button id="btnLoadHistory" type="button" class="btn btn-primary">Tampilkan</button>
+        <div class="filter-bar">
+          <div class="field-group">
+            <label for="filterDate">Tanggal</label>
+            <input id="filterDate" type="date" />
+          </div>
+          <div class="field-group">
+            <label for="filterSession">Sesi</label>
+            <input id="filterSession" type="text" placeholder="Semua sesi..." />
+          </div>
+          <div class="field-group grow">
+            <label for="searchHistoryInput">Cari Cepat</label>
+            <input id="searchHistoryInput" type="search" placeholder="Cari nama, posisi, atau token..." />
+          </div>
+          <button id="btnLoadHistory" type="button" class="btn btn-primary">Muat Data</button>
         </div>
 
-        <div id="historyStatus" class="meta-muted">Pilih filter atau klik Tampilkan untuk memuat data.</div>
+        <div id="historyStatus" class="meta-muted">Pilih filter atau klik Muat Data untuk menampilkan log.</div>
 
         <div class="table-wrap">
           <table>
@@ -550,16 +164,22 @@
       </div>
     </section>
 
+    <!-- Panel Rekapitulasi Kehadiran -->
     <section id="panel-rekap" class="panel">
       <div class="page-header">
-        <h1>Ringkasan</h1>
-        <p>Akumulasi kehadiran tiap anggota skuad berdasarkan sesi tercatat.</p>
+        <div>
+          <h1>Ringkasan Kehadiran</h1>
+          <p>Statistik partisipasi setiap pemain dari seluruh sesi yang tercatat.</p>
+        </div>
+        <span id="rekapSummary" class="count-badge">Total sesi: 0</span>
       </div>
 
       <div class="card">
-        <div class="form-row" style="margin-bottom: 10px;">
+        <div class="filter-bar">
+          <div class="field-group grow">
+            <input id="searchRekapInput" type="search" placeholder="Filter nama pemain atau posisi..." />
+          </div>
           <button id="btnLoadRekap" type="button" class="btn btn-primary">Perbarui Ringkasan</button>
-          <span id="rekapSummary" class="meta-muted"></span>
         </div>
 
         <div class="table-wrap">
@@ -581,232 +201,7 @@
     </section>
   </main>
 
-  <script>
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyjKKp4maxqy3T4unEJ7plI4vvW09h_z0sqRSy6iIbCbVTJgDZkiX8Zy42Ry1M7g3-L/exec";
-    const SCANNER_ID = "PANITIA-01";
-
-    const html5QrCode = new Html5Qrcode("reader");
-    const sessionInput = document.getElementById("sessionInput");
-    const cameraSelect = document.getElementById("cameraSelect");
-    const btnStart = document.getElementById("btnStart");
-    const btnStop = document.getElementById("btnStop");
-    const statusBox = document.getElementById("statusBox");
-    const scanHistory = document.getElementById("scanHistory");
-
-    let isScanning = false;
-    let isSending = false;
-    let lastQuickToken = "";
-    let lastQuickTime = 0;
-    const QUICK_BOUNCE_MS = 3000;
-
-    document.querySelectorAll(".nav-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        document.querySelectorAll(".nav-btn").forEach((b) => b.classList.remove("active"));
-        document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
-
-        btn.classList.add("active");
-        const targetId = btn.getAttribute("data-target");
-        document.getElementById(targetId).classList.add("active");
-
-        if (targetId === "panel-history") {
-          loadRiwayatAbsensi();
-        } else if (targetId === "panel-rekap") {
-          loadRekapKehadiran();
-        }
-      });
-    });
-
-    function setStatus(message, type = "") {
-      statusBox.textContent = message;
-      statusBox.className = "status-box" + (type ? ` status-${type}` : "");
-    }
-
-    function escapeHtml(str) {
-      return String(str || "")
-        .replace(/\u0026/g, "\u0026amp;")
-        .replace(/\u003c/g, "\u0026lt;")
-        .replace(/\u003e/g, "\u0026gt;")
-        .replace(/\u0022/g, "\u0026quot;");
-    }
-
-    function addHistoryItem(token, label, ok) {
-      const li = document.createElement("li");
-      const timeStr = new Date().toLocaleTimeString("id-ID", { hour12: false });
-      li.innerHTML = `<span><strong>${escapeHtml(token)}</strong> — ${escapeHtml(label)}</span><span class="meta-muted">${timeStr}</span>`;
-      li.style.color = ok ? "#15803d" : "#b91c1c";
-      scanHistory.prepend(li);
-    }
-
-    async function loadCameras() {
-      try {
-        const devices = await Html5Qrcode.getCameras();
-        cameraSelect.innerHTML = "";
-        if (!devices || devices.length === 0) {
-          setStatus("Kamera tidak ditemukan.", "err");
-          btnStart.disabled = true;
-          return;
-        }
-        devices.forEach((device, idx) => {
-          const opt = document.createElement("option");
-          opt.value = device.id;
-          opt.text = device.label || `Kamera ${idx + 1}`;
-          if (/back|rear|belakang|environment/i.test(opt.text)) opt.selected = true;
-          cameraSelect.appendChild(opt);
-        });
-      } catch (err) {
-        setStatus("Izinkan akses kamera pada browser untuk memindai QR.", "err");
-      }
-    }
-
-    async function onQrDecoded(decodedText) {
-      const token = decodedText.trim();
-      const sessionName = (sessionInput.value || "Sesi Umum").trim();
-      const now = Date.now();
-
-      if (!token || isSending) return;
-      if (token === lastQuickToken && (now - lastQuickTime) < QUICK_BOUNCE_MS) return;
-
-      isSending = true;
-      lastQuickToken = token;
-      lastQuickTime = now;
-      setStatus(`Mengirim ${token} untuk sesi "${sessionName}"...`, "wait");
-
-      try {
-        const res = await fetch(APPS_SCRIPT_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({
-            qr_token: token,
-            session_id: sessionName,
-            scanner_id: SCANNER_ID
-          })
-        });
-
-        const result = await res.json();
-        if (result.ok) {
-          setStatus(result.message, "ok");
-          const posLabel = result.position ? ` [${result.position}]` : "";
-          addHistoryItem(token, `${result.player_name || "Hadir"}${posLabel} (${sessionName})`, true);
-        } else {
-          setStatus(result.message || "Gagal mencatat absensi", "err");
-          addHistoryItem(token, result.message || "Ditolak", false);
-        }
-      } catch (err) {
-        setStatus("Error koneksi: " + err.message, "err");
-        addHistoryItem(token, "Error jaringan", false);
-      } finally {
-        isSending = false;
-      }
-    }
-
-    btnStart.addEventListener("click", async () => {
-      const cameraId = cameraSelect.value;
-      if (!cameraId || isScanning) return;
-      try {
-        await html5QrCode.start(
-          cameraId,
-          { fps: 10, qrbox: { width: 220, height: 220 } },
-          onQrDecoded,
-          () => {}
-        );
-        isScanning = true;
-        btnStart.disabled = true;
-        btnStop.disabled = false;
-        setStatus("Kamera aktif. Arahkan ke QR pemain...");
-      } catch (err) {
-        setStatus("Gagal membuka kamera: " + err, "err");
-      }
-    });
-
-    btnStop.addEventListener("click", async () => {
-      if (!isScanning) return;
-      await html5QrCode.stop();
-      isScanning = false;
-      btnStart.disabled = false;
-      btnStop.disabled = true;
-      setStatus("Pemindaian dihentikan.");
-    });
-
-    async function loadRiwayatAbsensi() {
-      const historyStatus = document.getElementById("historyStatus");
-      const tbody = document.getElementById("historyTableBody");
-      const filterDate = document.getElementById("filterDate").value.trim();
-      const filterSession = document.getElementById("filterSession").value.trim();
-
-      historyStatus.textContent = "Memuat riwayat absensi...";
-      tbody.innerHTML = "";
-
-      try {
-        const params = new URLSearchParams({ action: "history" });
-        if (filterDate) params.set("date", filterDate);
-        if (filterSession) params.set("session", filterSession);
-
-        const res = await fetch(`${APPS_SCRIPT_URL}?${params.toString()}`);
-        const result = await res.json();
-        if (!result.ok) throw new Error(result.message || "Gagal memuat riwayat absensi");
-
-        const rows = result.data || [];
-        historyStatus.textContent = `${rows.length} catatan ditemukan.`;
-
-        if (rows.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="6">Belum ada catatan pada filter ini.</td></tr>`;
-          return;
-        }
-
-        tbody.innerHTML = rows.map((r) => `
-          <tr>
-            <td>${escapeHtml(r.tanggal)}</td>
-            <td>${escapeHtml(r.jam)}</td>
-            <td>${escapeHtml(r.sesi)}</td>
-            <td><strong>${escapeHtml(r.player_name)}</strong></td>
-            <td>${r.position ? `<span class="pos-pill">${escapeHtml(r.position)}</span>` : "-"}</td>
-            <td class="meta-muted">${escapeHtml(r.qr_token)}</td>
-          </tr>
-        `).join("");
-      } catch (err) {
-        historyStatus.textContent = "Error: " + err.message;
-      }
-    }
-
-    async function loadRekapKehadiran() {
-      const summaryEl = document.getElementById("rekapSummary");
-      const tbody = document.getElementById("rekapTableBody");
-
-      summaryEl.textContent = "Memuat ringkasan...";
-      tbody.innerHTML = "";
-
-      try {
-        const res = await fetch(`${APPS_SCRIPT_URL}?action=rekap`);
-        const result = await res.json();
-        if (!result.ok) throw new Error(result.message || "Gagal memuat ringkasan");
-
-        const rows = result.data || [];
-        summaryEl.textContent = `Total sesi tercatat: ${result.total_sessions || 0}`;
-
-        if (rows.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="6">Data skuad belum tersedia.</td></tr>`;
-          return;
-        }
-
-        tbody.innerHTML = rows.map((r) => `
-          <tr>
-            <td class="meta-muted">${escapeHtml(r.qr_token)}</td>
-            <td><strong>${escapeHtml(r.player_name)}</strong></td>
-            <td>${r.position ? `<span class="pos-pill">${escapeHtml(r.position)}</span>` : "-"}</td>
-            <td>${escapeHtml(r.status)}</td>
-            <td><strong>${r.hadir}</strong> / ${r.total_sesi}</td>
-            <td>${r.persentase}%</td>
-          </tr>
-        `).join("");
-      } catch (err) {
-        summaryEl.textContent = "Error: " + err.message;
-      }
-    }
-
-    document.getElementById("btnLoadHistory").addEventListener("click", loadRiwayatAbsensi);
-    document.getElementById("btnLoadRekap").addEventListener("click", loadRekapKehadiran);
-
-    loadCameras();
-  </script>
+  <!-- Script Logika Presensi -->
+  <script src="index.js"></script>
 </body>
 </html>
